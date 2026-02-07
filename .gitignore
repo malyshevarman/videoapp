@@ -1,0 +1,43 @@
+# Laravel
+/vendor
+/node_modules
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Logs
+/storage/logs
+/storage/*.key
+
+# Cache / compiled
+/bootstrap/cache/*
+!bootstrap/cache/.gitignore
+
+# Sessions / views / cache
+/storage/framework/*
+!storage/framework/.gitignore
+!storage/framework/sessions/.gitignore
+!storage/framework/views/.gitignore
+!storage/framework/cache/.gitignore
+
+# Tests
+/.phpunit.result.cache
+
+# IDE
+/.idea
+/.vscode
+
+# OS
+.DS_Store
+Thumbs.db
+
+# NPM / Yarn
+npm-debug.log*
+yarn-error.log*
+
+# Mix / Vite
+/public/hot
+/public/storage
+/public/mix-manifest.json
