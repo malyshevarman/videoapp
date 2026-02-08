@@ -685,6 +685,19 @@ button {
     top: 0;
 }
 
+.groupBtn {
+    display: flex;
+    flex-direction: column;
+
+    .btn--ghost {
+        margin: 0 0 1px 0;
+
+        &.defer{
+            border: 0!important;
+            background: none!important;
+        }
+    }
+}
 
 .item {
     background: rgba(0, 34, 57, 0.05);

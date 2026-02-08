@@ -79,7 +79,7 @@ const activeItemsList = computed(() =>
     showDeferred.value ? props.deferredItemsList : props.approvedItemsList
 )
 const detailsTitle = computed(() =>
-    showDeferred.value ? 'Детали заказа на работы' : 'Детали заказа'
+    showDeferred.value ? 'Работы' : 'Детали заказа'
 )
 const summaryLabel = computed(() =>
     showDeferred.value ? 'Отложенные работы:' : 'Согласовано работ:'
@@ -135,28 +135,25 @@ function toggleDeferredView() {
                         Ориентировочное время ремонта {{ approvedRepairTimeHours }} ч.<br/>
                         после согласования ремонтных работ
                     </div>
+                    <div class="text__job" v-if="approvedStats.count && showDeferred">
+                        Данные работы будут предложены<br/>
+                        при следующем визите
+                    </div>
 
                     <div class="mrg"></div>
                     <div class="sticky__right">
-                        <button
-                            v-if="isLast && deferredStats.count"
-                            class="btn btn--ghost"
-                            type="button"
-                            @click="toggleDeferredView"
-                        >
-                            {{ showDeferred ? 'Назад' : 'Отложенные работы' }}
-                        </button>
+
                         <button
                             class="btn btn--ghost"
                             type="button"
-                            v-if="!isFirst"
+                            v-if="!isFirst && !showDeferred && !isLast"
                             @click="goPrev"
                         >
                             Назад
                         </button>
 
                         <button
-                            v-if="!isLast"
+                            v-if="!isLast && !showDeferred"
                             class="btn btn--next"
                             type="button"
                             @click="goNext"
@@ -164,15 +161,26 @@ function toggleDeferredView() {
                             Далее
                         </button>
 
-                        <button
-                            v-else
-                            class="btn btn--primary"
-                            type="button"
-                            :disabled="!allHaveStatus"
-                            @click="submitAll"
-                        >
-                            Подтвердить
-                        </button>
+                       <div class="groupBtn">
+                           <button
+                               v-if="isLast && deferredStats.count"
+                               class="btn btn--ghost"
+                               type="button"
+                               :class="showDeferred ? '':'defer'"
+                               @click="toggleDeferredView"
+                           >
+                               {{ showDeferred ? 'Назад' : 'Отложенные работы' }}
+                           </button>
+                           <button
+                               v-if="isLast && !showDeferred"
+                               class="btn btn--primary"
+                               type="button"
+                               :disabled="!allHaveStatus"
+                               @click="submitAll"
+                           >
+                               Подтвердить
+                           </button>
+                       </div>
                     </div>
                 </div>
             </div>
