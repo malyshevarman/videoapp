@@ -1,14 +1,18 @@
 <script setup lang="ts">
-import {computed, onMounted, reactive, ref, watch ,nextTick } from 'vue'
+import { computed, onMounted, ref, nextTick } from 'vue'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 
 dayjs.locale('ru')
-import { Dialog, DialogPanel, DialogTitle, TransitionRoot } from '@headlessui/vue'
-import { VueDatePicker } from '@vuepic/vue-datepicker'
 import { ru } from 'date-fns/locale'
 
 import { toast } from 'vue-sonner'
+import ServiceHeader from './components/ServiceHeader.vue'
+import WorkDetails from './components/WorkDetails.vue'
+import ItemsList from './components/ItemsList.vue'
+import StickyFooter from './components/StickyFooter.vue'
+import RejectModal from './components/RejectModal.vue'
+import DeferredModal from './components/DeferredModal.vue'
 
 const props = defineProps({
     service: Object,
@@ -39,6 +43,13 @@ const isFirst = computed(() => activeIndex.value <= 0)
 
 const isLast = computed(() =>
     activeIndex.value === localItems.value.length - 1
+)
+const activeItemNumber = computed(() => {
+    if (!activeItem.value) return 0
+    return localItems.value.findIndex(i => i.id === activeItem.value.id) + 1
+})
+const visitDate = computed(() =>
+    dayjs(props.service.visitStartTime).format('D MMMM YYYY')
 )
 const approvedStats = computed(() => {
     return localItems.value.reduce(
@@ -265,6 +276,10 @@ const deferredTaskDateModel = computed<string | null>({
     },
 })
 
+function updateDeferredTaskDate(value: string | null) {
+    deferredTaskDateModel.value = value
+}
+
 function openDeferredModal() {
     if (!activeItem.value) return
         // если хочешь каждый раз чистить дату:
@@ -373,110 +388,7 @@ const approvedRepairTimeHours = computed(() => {
 <template>
     <div class="page">
         <!-- TOP CARD -->
-        <header class="top">
-            <div class="container">
-                <div class="top__card">
-                    <div class="top__head">
-                        <h1 class="top__title">{{ service.client.customerFirstName }}, это видео-отчет о состоянии
-                            автомобиля</h1>
-
-                        <div class="top__brand">
-                            <div class="top__logo" aria-label="БорисХоф">
-
-                            </div>
-                        </div>
-                    </div>
-
-                    <a class="top__share" href="#">
-            <span class="top__share-ic" aria-hidden="true">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <path d="M12 3v12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                <path d="M8 7l4-4 4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                      stroke-linejoin="round"/>
-                <path d="M4 13v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6" stroke="currentColor" stroke-width="2"
-                      stroke-linecap="round"/>
-              </svg>
-            </span>
-                        Поделиться отчетом
-                    </a>
-
-                    <div class="top__divider"></div>
-
-                    <div class="top__grid">
-                        <div class="kv">
-                            <div class="kv__row">
-                                <div class="kv__k">Дата визита:</div>
-                                <div class="kv__v"> {{ dayjs(service.visitStartTime).format('D MMMM YYYY') }}</div>
-                            </div>
-                            <div class="kv__row">
-                                <div class="kv__k">Причина визита:</div>
-                                <div class="kv__v">Тех. обслуживание</div>
-                            </div>
-                            <div class="kv__row">
-                                <div class="kv__k">Автомобиль:</div>
-                                <div class="kv__v">{{ service.surveyObject.carBrand }},
-                                    {{ service.surveyObject.carModelCode }}
-                                </div>
-                            </div>
-                            <div class="kv__row">
-                                <div class="kv__k">Регистрационный номер:</div>
-                                <div class="kv__v">{{ service.surveyObject.carLicensePlate }}</div>
-                            </div>
-                        </div>
-
-                        <div class="kv">
-                            <div class="kv__row">
-                                <div class="kv__k">Дилерский центр:</div>
-                                <div class="kv__v">BMW БорисХоф Север</div>
-                            </div>
-                            <div class="kv__row">
-                                <div class="kv__k">Мастер консультант:</div>
-                                <div class="kv__v">{{ service.responsibleEmployee.specialistFirstName }},
-                                    {{ service.responsibleEmployee.specialistLastName }}
-                                </div>
-                            </div>
-                            <div class="kv__row">
-                                <div class="kv__k">Механик:</div>
-                                <div class="kv__v">Старовойтов А. М.</div>
-                            </div>
-                        </div>
-
-                        <div class="top__links">
-                            <div class="top__links-title">Первичный осмотр:</div>
-
-                            <a class="top__link" href="#">
-                <span class="top__link-ic" aria-hidden="true">
-                 <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path
-    d="M9.95647 11.9967C9.92291 11.9634 9.87759 11.9448 9.83036 11.9448C9.78312 11.9448 9.7378 11.9634 9.70424 11.9967L7.11049 14.5904C5.9096 15.7913 3.88281 15.9185 2.55692 14.5904C1.22879 13.2623 1.35603 11.2377 2.55692 10.0368L5.15067 7.44308C5.21987 7.37389 5.21987 7.26005 5.15067 7.19085L4.26228 6.30246C4.22871 6.26922 4.18339 6.25058 4.13616 6.25058C4.08893 6.25058 4.04361 6.26922 4.01004 6.30246L1.41629 8.89621C-0.472098 10.7846 -0.472098 13.8404 1.41629 15.7266C3.30469 17.6127 6.36049 17.615 8.24665 15.7266L10.8404 13.1328C10.9096 13.0636 10.9096 12.9498 10.8404 12.8806L9.95647 11.9967ZM15.7288 1.41629C13.8404 -0.472098 10.7846 -0.472098 8.89844 1.41629L6.30245 4.01005C6.26922 4.04361 6.25058 4.08893 6.25058 4.13616C6.25058 4.18339 6.26922 4.22872 6.30245 4.26228L7.18862 5.14844C7.25781 5.21763 7.37165 5.21763 7.44085 5.14844L10.0346 2.55469C11.2355 1.35379 13.2623 1.22656 14.5882 2.55469C15.9163 3.88281 15.7891 5.90737 14.5882 7.10826L11.9944 9.70201C11.9612 9.73557 11.9425 9.7809 11.9425 9.82813C11.9425 9.87536 11.9612 9.92068 11.9944 9.95424L12.8828 10.8426C12.952 10.9118 13.0658 10.9118 13.135 10.8426L15.7288 8.24889C17.615 6.36049 17.615 3.30469 15.7288 1.41629ZM10.7623 5.45424C10.7287 5.42101 10.6834 5.40237 10.6362 5.40237C10.5889 5.40237 10.5436 5.42101 10.51 5.45424L5.45424 10.5078C5.42101 10.5414 5.40237 10.5867 5.40237 10.6339C5.40237 10.6812 5.42101 10.7265 5.45424 10.76L6.33817 11.644C6.40737 11.7132 6.52121 11.7132 6.5904 11.644L11.644 6.5904C11.7132 6.52121 11.7132 6.40737 11.644 6.33817L10.7623 5.45424Z"
-    fill="#002239" fill-opacity="0.5"/>
-</svg>
-                </span>
-                                Визуальный осмотр от 31.09.2024
-                            </a>
-
-                            <a class="top__link" href="#">
-                <span class="top__link-ic" aria-hidden="true">
-       <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path
-    d="M9.95647 11.9967C9.92291 11.9634 9.87759 11.9448 9.83036 11.9448C9.78312 11.9448 9.7378 11.9634 9.70424 11.9967L7.11049 14.5904C5.9096 15.7913 3.88281 15.9185 2.55692 14.5904C1.22879 13.2623 1.35603 11.2377 2.55692 10.0368L5.15067 7.44308C5.21987 7.37389 5.21987 7.26005 5.15067 7.19085L4.26228 6.30246C4.22871 6.26922 4.18339 6.25058 4.13616 6.25058C4.08893 6.25058 4.04361 6.26922 4.01004 6.30246L1.41629 8.89621C-0.472098 10.7846 -0.472098 13.8404 1.41629 15.7266C3.30469 17.6127 6.36049 17.615 8.24665 15.7266L10.8404 13.1328C10.9096 13.0636 10.9096 12.9498 10.8404 12.8806L9.95647 11.9967ZM15.7288 1.41629C13.8404 -0.472098 10.7846 -0.472098 8.89844 1.41629L6.30245 4.01005C6.26922 4.04361 6.25058 4.08893 6.25058 4.13616C6.25058 4.18339 6.26922 4.22872 6.30245 4.26228L7.18862 5.14844C7.25781 5.21763 7.37165 5.21763 7.44085 5.14844L10.0346 2.55469C11.2355 1.35379 13.2623 1.22656 14.5882 2.55469C15.9163 3.88281 15.7891 5.90737 14.5882 7.10826L11.9944 9.70201C11.9612 9.73557 11.9425 9.7809 11.9425 9.82813C11.9425 9.87536 11.9612 9.92068 11.9944 9.95424L12.8828 10.8426C12.952 10.9118 13.0658 10.9118 13.135 10.8426L15.7288 8.24889C17.615 6.36049 17.615 3.30469 15.7288 1.41629ZM10.7623 5.45424C10.7287 5.42101 10.6834 5.40237 10.6362 5.40237C10.5889 5.40237 10.5436 5.42101 10.51 5.45424L5.45424 10.5078C5.42101 10.5414 5.40237 10.5867 5.40237 10.6339C5.40237 10.6812 5.42101 10.7265 5.45424 10.76L6.33817 11.644C6.40737 11.7132 6.52121 11.7132 6.5904 11.644L11.644 6.5904C11.7132 6.52121 11.7132 6.40737 11.644 6.33817L10.7623 5.45424Z"
-    fill="#002239" fill-opacity="0.5"/>
-</svg>
-                </span>
-                                Результат проверки автомобиля
-                            </a>
-                        </div>
-                    </div>
-
-                    <button class="top__collapse" type="button" aria-label="Свернуть">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                            <path d="M7 14l5-5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                  stroke-linejoin="round"/>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-        </header>
+        <ServiceHeader :service="service" :visit-date="visitDate" />
 
         <!-- MAIN -->
         <main class="main">
@@ -527,103 +439,20 @@ const approvedRepairTimeHours = computed(() => {
                             </div>
 
                             <!-- DETAILS -->
-                            <div class="work" v-if="activeItem">
-                                <div class="work__head">
-                                    <div class="work__badge">
-                                        {{ localItems.findIndex(i => i.id === activeItem.id) + 1 }}</div>
-                                    <div class="work__title">
-                                        {{ activeItem.title }}
-                                        <span class="work__hint" aria-hidden="true">
-                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"
-                                             xmlns="http://www.w3.org/2000/svg">
-<g clip-path="url(#clip0_2342_133)">
-<path
-    d="M7 0C3.13437 0 0 3.13437 0 7C0 10.8656 3.13437 14 7 14C10.8656 14 14 10.8656 14 7C14 3.13437 10.8656 0 7 0ZM7 12.8125C3.79063 12.8125 1.1875 10.2094 1.1875 7C1.1875 3.79063 3.79063 1.1875 7 1.1875C10.2094 1.1875 12.8125 3.79063 12.8125 7C12.8125 10.2094 10.2094 12.8125 7 12.8125Z"
-    fill="#949494"/>
-<path
-    d="M8.74351 3.94795C8.27476 3.53701 7.65601 3.31201 6.99976 3.31201C6.34351 3.31201 5.72476 3.53857 5.25601 3.94795C4.76851 4.37451 4.49976 4.94795 4.49976 5.56201V5.68076C4.49976 5.74951 4.55601 5.80576 4.62476 5.80576H5.37476C5.44351 5.80576 5.49976 5.74951 5.49976 5.68076V5.56201C5.49976 4.87295 6.17319 4.31201 6.99976 4.31201C7.82632 4.31201 8.49976 4.87295 8.49976 5.56201C8.49976 6.04795 8.15601 6.49326 7.62319 6.69795C7.29194 6.82451 7.01069 7.04639 6.80913 7.33701C6.60444 7.63389 6.49819 7.99014 6.49819 8.35107V8.68701C6.49819 8.75576 6.55444 8.81201 6.62319 8.81201H7.37319C7.44194 8.81201 7.49819 8.75576 7.49819 8.68701V8.33232C7.499 8.18064 7.5455 8.03272 7.63162 7.90785C7.71775 7.78298 7.8395 7.68697 7.98101 7.63232C8.90288 7.27764 9.49819 6.46514 9.49819 5.56201C9.49976 4.94795 9.23101 4.37451 8.74351 3.94795ZM6.37476 10.437C6.37476 10.6028 6.4406 10.7617 6.55781 10.879C6.67502 10.9962 6.834 11.062 6.99976 11.062C7.16552 11.062 7.32449 10.9962 7.4417 10.879C7.55891 10.7617 7.62476 10.6028 7.62476 10.437C7.62476 10.2713 7.55891 10.1123 7.4417 9.99507C7.32449 9.87786 7.16552 9.81201 6.99976 9.81201C6.834 9.81201 6.67502 9.87786 6.55781 9.99507C6.4406 10.1123 6.37476 10.2713 6.37476 10.437Z"
-    fill="#949494"/>
-</g>
-<defs>
-<clipPath id="clip0_2342_133">
-<rect width="14" height="14" fill="white"/>
-</clipPath>
-</defs>
-</svg>
-
-                                    </span>
-                                    </div>
-
-                                    <div class="work__meta">
-                                        <div class="work__status"
-                                             :class="{
-  'work__status--green': getStatusText(activeItem.customerApproved) === 'Согласовано',
-  'work__status--red': getStatusText(activeItem.customerApproved) === 'Отклонено',
-    'work__status--yellow': getStatusText(activeItem.customerApproved) === 'Отложено',
-}">
-                                            <span class="dot"></span>   {{getStatusText(activeItem.customerApproved) }}
-                                        </div>
-                                        <div class="work__time" v-if="activeItemTimeHours > 0">
-                                            ~ {{ formatTime(activeItemTimeHours) }}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="work__body">
-                                    <div class="work__cols">
-                                        <div class="work__list">
-                                            <div class="work__group" v-for="(g, gi) in groups" :key="gi">
-                                                <div class="work__group-title">
-                                                    {{ g.title }}
-                                                    <span class="chev">^</span>
-                                                    <span class="mrg"></span>
-                                                    <div class="work__price">{{ money(g.total) }}</div>
-                                                </div>
-
-                                                <div class="work__row" v-for="row in g.rows" :key="row.lineId">
-                                                    <div class="work__name">
-                                                        {{ row.positionName }}
-                                                        <small v-if="row.positionQuantity">
-                                                            ({{ row.positionQuantity }} {{ row.positionMeasure }})
-                                                        </small>
-                                                    </div>
-                                                    <div class="work__price">{{ money(row.positionAmountIncVat) }}</div>
-                                                </div>
-                                            </div>
-
-                                            <div class="work__total">
-                                                <div class="work__total-k">Всего:</div>
-                                                <div class="work__total-v">{{ money(total) }}</div>
-                                            </div>
-                                        </div>
-                                        <div class="work__actions">
-                                            <button class="btn btn--ghost" type="button"
-                                                    :disabled="activeItem?.customerApproved === 'callback'"
-                                                    @click="requestCallback"
-                                            >Обратный звонок</button>
-
-                                            <button class="btn btn--ghost" type="button"
-                                                    :disabled="activeItem?.customerApproved === 'deferred'"
-                                                    @click="openDeferredModal"
-                                            >
-                                                Напомнить позже
-                                            </button>
-
-                                            <button class="btn btn--ghost" type="button"
-                                                    :disabled="activeItem?.customerApproved === 'rejected'"
-                                                    @click="openRejectConfirm">
-                                                Отклонить
-                                            </button>
-
-                                            <button class="btn btn--primary" type="button"
-                                                    :disabled="activeItem?.customerApproved === 'approved'"
-                                                    @click="approveActiveItem">
-                                                Согласовать
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            <WorkDetails
+                                :active-item="activeItem"
+                                :active-item-number="activeItemNumber"
+                                :groups="groups"
+                                :total="total"
+                                :active-item-time-hours="activeItemTimeHours"
+                                :get-status-text="getStatusText"
+                                :format-time="formatTime"
+                                :money="money"
+                                :request-callback="requestCallback"
+                                :open-deferred-modal="openDeferredModal"
+                                :open-reject-confirm="openRejectConfirm"
+                                :approve-active-item="approveActiveItem"
+                            />
 
 
                         </div>
@@ -659,54 +488,12 @@ const approvedRepairTimeHours = computed(() => {
                             </div>
                         </div>
 
-                        <div class="list" v-if="localItems.length > 0">
-                            <!-- ITEM 1 -->
-                            <a class="item" href="#"
-                               v-for="(item, index) in localItems"
-                               :class="{ 'is-active': activeItem?.id === item.id }"
-                               @click.prevent="selectItem(item)"
-                               :key="item.id">
-                                <div class="item__thumb">
-                                    <img :src="item.image" alt=""/>
-                                    <div class="item__num">{{ index + 1 }}</div>
-                                </div>
-                                <div class="item__info">
-                                    <div class="item__title">{{ item.title }}</div>
-                                    <div class="item__sub"
-                                         :class="{
-  'work__status--green': getStatusText(item.customerApproved) === 'Согласовано',
-  'work__status--red': getStatusText(item.customerApproved) === 'Отклонено',
-  'work__status--yellow': getStatusText(item.customerApproved) === 'Отложено',
-}">
-                                        <span class="dot"></span>
-                                        {{getStatusText(item.customerApproved) }}
-                                    </div>
-                                </div>
-                                <div class="item__tag"
-                                     :class="{
-    'is-red': item.answerStatus === 'red',
-    'is-yellow': item.answerStatus === 'yellow',
-    'is-green': item.answerStatus === 'green',
-    'is-dark': item.answerStatus === 'dark',
-  }"
-                                     aria-hidden="true">
-                                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none"
-                                         xmlns="http://www.w3.org/2000/svg">
-                                        <rect width="32" height="32" rx="16" fill-opacity="0.75"/>
-                                        <g clip-path="url(#clip0_2342_749)">
-                                            <path
-                                                d="M15.0268 18.3268C15.4242 18.7235 15.4242 19.3675 15.0268 19.7648L11.3548 23.4368C10.5628 24.2288 9.26284 24.2035 8.50284 23.3602C7.79084 22.5695 7.90217 21.3315 8.65417 20.5795L12.2475 16.9862C12.6442 16.5895 13.2882 16.5888 13.6848 16.9862L15.0262 18.3275L15.0268 18.3268ZM18.6348 15.3355C19.4768 15.3368 20.3308 15.6695 20.9595 16.2988C21.3335 16.6668 21.8348 16.5962 22.0002 16.4822C23.2128 15.6428 24.0122 14.2535 24.0122 12.6668C24.0122 12.3915 23.9875 12.1222 23.9415 11.8602C23.8508 11.3482 23.2035 11.1662 22.8355 11.5335L21.7375 12.6315C20.9735 13.3955 19.9688 13.5128 19.2942 12.9608C18.5182 12.3262 18.4755 11.1795 19.1668 10.4882L20.4768 9.17818C20.8442 8.81018 20.6642 8.16085 20.1522 8.07018C19.8902 8.02351 19.6208 7.99951 19.3455 7.99951C17.3835 7.99951 15.7088 9.21151 15.0195 10.9268C14.8815 11.2695 14.9622 11.6635 15.2235 11.9242L18.6348 15.3348V15.3355ZM20.0168 17.2415C19.5095 16.7342 18.7962 16.5702 18.1475 16.7342L13.3328 11.9202V10.6662C13.3328 10.1648 13.0648 9.70085 12.6302 9.45018L10.3595 8.14085C9.9475 7.90285 9.42684 7.97151 9.09017 8.30818L8.30884 9.08951C7.9715 9.42618 7.90284 9.94751 8.14084 10.3595L9.45084 12.6308C9.7015 13.0655 10.1648 13.3328 10.6662 13.3328H11.9182L16.7342 18.1482C16.5708 18.7962 16.7342 19.5095 17.2415 20.0168L20.6128 23.3522C21.3775 24.1168 22.6982 24.1895 23.4622 23.4242C24.2275 22.6575 24.1308 21.5128 23.4615 20.6495L20.0168 17.2415Z"
-                                                fill="white"/>
-                                        </g>
-                                        <defs>
-                                            <clipPath id="clip0_2342_749">
-                                                <rect width="16" height="16" fill="white" transform="translate(8 8)"/>
-                                            </clipPath>
-                                        </defs>
-                                    </svg>
-                                </div>
-                            </a>
-                        </div>
+                        <ItemsList
+                            :items="localItems"
+                            :active-item-id="activeItem?.id ?? null"
+                            :get-status-text="getStatusText"
+                            :select-item="selectItem"
+                        />
                     </aside>
                 </section>
 
@@ -774,166 +561,44 @@ const approvedRepairTimeHours = computed(() => {
         </main>
 
         <!-- STICKY BOTTOM -->
-        <div class="sticky">
-            <div class="container">
-
-                <div class="" v-if="approvedStats.count">
-                    <div class="sticky__head"
-                         :class="{ 'is-open': stickyOpen }"
-                         @click="stickyOpen = !stickyOpen">
-                        <div class="sticky__head-title">
-                            Детали заказа <span>({{ approvedItemsList.length }})</span>
-                        </div>
-                    </div>
-
-                    <!-- Раскрывающаяся часть -->
-                    <Transition name="sticky-acc">
-                        <div v-show="stickyOpen" class="sticky__body">
-
-                            <!-- список работ -->
-                            <div class="sticky__list" v-if="approvedItemsList.length">
-                                <div class="sticky__list-row" v-for="w in approvedItemsList" :key="w.id">
-                                    <div class="sticky__list-title">{{ w.title }}</div>
-                                    <div class="sticky__list-sum">{{ money(w.sum) }}</div>
-                                </div>
-                            </div>
-                        </div>
-                    </Transition>
-                </div>
-
-
-                <div class="sticky__bar">
-                    <div class="col_left">
-                        <div class="sticky__left">
-                            <div class="sticky__label">Согласовано работ:</div>
-                            <div class="sticky__value"><span
-                                class="sticky__value-accent">{{ approvedStats.count }}</span> из {{ items.length }}
-                            </div>
-                        </div>
-                        <div class="mrg"></div>
-
-                        <div class="sticky__mid">
-                            <div class="sticky__label">Итого:</div>
-                            <div class="sticky__sum">{{ approvedStats.sumIncVat }} ₽</div>
-                        </div>
-                    </div>
-                    <div class="col_right">
-
-                        <div class="text__job" v-if="approvedStats.count">
-                            Ориентировочное время ремонта {{approvedRepairTimeHours}} ч.<br/>
-                            после согласования ремонтных работ
-                        </div>
-
-                        <div class="mrg"></div>
-                        <div class="sticky__right">
-                            <button
-                                class="btn btn--ghost"
-                                type="button"
-                                v-if="!isFirst"
-                                @click="goPrev"
-                            >
-                                Назад
-                            </button>
-
-                            <!-- Далее -->
-                            <button
-                                v-if="!isLast"
-                                class="btn btn--next"
-                                type="button"
-                                @click="goNext"
-                            >
-                                Далее
-                            </button>
-
-                            <!-- Подтвердить -->
-                            <button
-                                v-else
-                                class="btn btn--primary"
-                                type="button"
-                                :disabled="!allHaveStatus"
-                                @click="submitAll"
-                            >
-                                Подтвердить
-                            </button>
-                        </div>
-                    </div>
-
-
-
-                </div>
-            </div>
-        </div>
+        <StickyFooter
+            :sticky-open="stickyOpen"
+            :approved-stats="approvedStats"
+            :approved-items-list="approvedItemsList"
+            :approved-repair-time-hours="approvedRepairTimeHours"
+            :items-length="items.length"
+            :is-first="isFirst"
+            :is-last="isLast"
+            :all-have-status="allHaveStatus"
+            :money="money"
+            :go-prev="goPrev"
+            :go-next="goNext"
+            :submit-all="submitAll"
+            @toggle="stickyOpen = !stickyOpen"
+        />
     </div>
 
 
 
-    <TransitionRoot as="template" :show="isRejectOpen">
-        <Dialog as="div" :open="isRejectOpen" class="modal-root" @close="() => {}">
-            <div class="modal-overlay"></div>
-
-            <div class="modal-wrap">
-                <DialogPanel class="modal-panel icon">
-                    <DialogTitle class="modal-title">
-                        Отклонить предложение {{ localItems.findIndex(i => i.id === activeItem?.id) + 1 }} по ремонту автомобиля?
-                    </DialogTitle>
-
-                    <p class="modal-text">
-                        Если не делать вовремя ремонт критических элементов автомобиля, это может быть небезопасно
-                    </p>
-
-                    <div class="modal-actions">
-                        <button class="btn btn--ghost" type="button" @click="closeRejectConfirm">Нет</button>
-                        <button class="btn btn--primary" type="button" @click="confirmReject">Да, отклонить</button>
-                    </div>
-                </DialogPanel>
-            </div>
-        </Dialog>
-    </TransitionRoot>
+    <RejectModal
+        :is-open="isRejectOpen"
+        :active-item-number="activeItemNumber"
+        @close="closeRejectConfirm"
+        @confirm="confirmReject"
+    />
 
 
-    <TransitionRoot as="template" :show="isDeferredOpen">
-        <Dialog as="div" :open="isDeferredOpen" class="modal-root" @close="() => {}">
-            <div class="modal-overlay"></div>
-
-            <div class="modal-wrap">
-                <DialogPanel class="modal-panel">
-                    <DialogTitle class="modal-title">
-                        Выберите удобную дату и мы Вам напомним о предложении по ремонту автомобиля
-                    </DialogTitle>
-
-                    <div class="modal-body">
-                        <VueDatePicker
-                            v-model="deferredTaskDateModel"
-                            :enable-time-picker="false"
-                            :time-picker="false"
-                            :auto-apply="true"
-                            :locale="ru"
-                            :min-date="minDeferredDate"
-                            :max-date="maxDeferredDate"
-                            :time-config="{ enableTimePicker: false }"
-                            :model-type="'yyyy-MM-dd'"
-                            inline
-                        />
-                    </div>
-
-                    <div class="modal-actions">
-                        <button class="btn btn--ghost" type="button" @click="closeDeferredModal(true)">
-                            Отменить
-                        </button>
-
-                        <button
-                            class="btn btn--primary"
-                            type="button"
-                            :disabled="!activeItem?.deferredTaskDate"
-                            @click="confirmDeferred"
-                        >
-                            Подтвердить
-                        </button>
-                    </div>
-                </DialogPanel>
-            </div>
-        </Dialog>
-    </TransitionRoot>
+    <DeferredModal
+        :is-open="isDeferredOpen"
+        :model-value="deferredTaskDateModel"
+        :locale="ru"
+        :min-date="minDeferredDate"
+        :max-date="maxDeferredDate"
+        :can-confirm="Boolean(activeItem?.deferredTaskDate)"
+        @update:model-value="updateDeferredTaskDate"
+        @close="closeDeferredModal(true)"
+        @confirm="confirmDeferred"
+    />
 
 
     <Toaster position="top-right" />
