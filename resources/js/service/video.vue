@@ -454,14 +454,10 @@ const togglePauseRecording = async () => {
         pauseStartTime = Date.now()
         clearTimer()
 
-        // если поддерживается нативная пауза — используем её
-        if (mediaRecorder.state === 'recording' && mediaRecorder.pause) {
-            mediaRecorder.pause()
-        } else {
-            // fallback: режем чанк через stop
-            stopReason.value = 'pause'
-            if (mediaRecorder.state !== 'inactive') mediaRecorder.stop()
-        }
+        // Всегда режем текущий чанк через stop, чтобы избежать "залипания" кадра
+        // на некоторых устройствах при native pause/resume MediaRecorder.
+        stopReason.value = 'pause'
+        if (mediaRecorder.state !== 'inactive') mediaRecorder.stop()
         return
     }
 
@@ -472,13 +468,9 @@ const togglePauseRecording = async () => {
         pauseStartTime = 0
     }
 
-    // если нативный resume есть
-    if (mediaRecorder.state === 'paused' && mediaRecorder.resume) {
-        mediaRecorder.resume()
-    } else {
-        // fallback: стартуем новый чанк
-        await startNewChunk()
-    }
+    stopReason.value = null
+    // стартуем новый чанк после паузы
+    await startNewChunk()
 
     clearTimer()
     recordingTimer = setInterval(() => {
