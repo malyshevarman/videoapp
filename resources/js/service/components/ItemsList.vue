@@ -9,7 +9,7 @@ type Item = {
     answerStatus?: string
 }
 
-defineProps({
+const props = defineProps({
     items: {
         type: Array as PropType<Item[]>,
         required: true,
@@ -27,6 +27,21 @@ defineProps({
         required: true,
     },
 })
+
+const statusText = (item: Item) => props.getStatusText(item.customerApproved)
+
+const statusClass = (text: string) => ({
+    'work__status--green': text === 'Согласовано',
+    'work__status--red': text === 'Отклонено',
+    'work__status--yellow': text === 'Отложено',
+})
+
+const answerStatusClass = (status?: string) => ({
+    'is-red': status === 'red',
+    'is-yellow': status === 'yellow',
+    'is-green': status === 'green',
+    'is-dark': status === 'dark',
+})
 </script>
 
 <template>
@@ -42,24 +57,12 @@ defineProps({
             </div>
             <div class="item__info">
                 <div class="item__title">{{ item.title }}</div>
-                <div class="item__sub"
-                     :class="{
-  'work__status--green': getStatusText(item.customerApproved) === 'Согласовано',
-  'work__status--red': getStatusText(item.customerApproved) === 'Отклонено',
-  'work__status--yellow': getStatusText(item.customerApproved) === 'Отложено',
-}">
+                <div class="item__sub" :class="statusClass(statusText(item))">
                     <span class="dot"></span>
-                    {{ getStatusText(item.customerApproved) }}
+                    {{ statusText(item) }}
                 </div>
             </div>
-            <div class="item__tag"
-                 :class="{
-    'is-red': item.answerStatus === 'red',
-    'is-yellow': item.answerStatus === 'yellow',
-    'is-green': item.answerStatus === 'green',
-    'is-dark': item.answerStatus === 'dark',
-  }"
-                 aria-hidden="true">
+            <div class="item__tag" :class="answerStatusClass(item.answerStatus)" aria-hidden="true">
                 <svg width="32" height="32" viewBox="0 0 32 32" fill="none"
                      xmlns="http://www.w3.org/2000/svg">
                     <rect width="32" height="32" rx="16" fill-opacity="0.75"/>

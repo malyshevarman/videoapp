@@ -17,7 +17,7 @@ type Item = {
     customerApproved?: string
 }
 
-defineProps({
+const props = defineProps({
     activeItem: {
         type: Object as PropType<Item | null>,
         default: null,
@@ -67,6 +67,14 @@ defineProps({
         required: true,
     },
 })
+
+const statusText = (item: Item | null) => props.getStatusText(item?.customerApproved)
+
+const statusClass = (text: string) => ({
+    'work__status--green': text === 'Согласовано',
+    'work__status--red': text === 'Отклонено',
+    'work__status--yellow': text === 'Отложено',
+})
 </script>
 
 <template>
@@ -98,13 +106,8 @@ defineProps({
             </div>
 
             <div class="work__meta">
-                <div class="work__status"
-                     :class="{
-  'work__status--green': getStatusText(activeItem.customerApproved) === 'Согласовано',
-  'work__status--red': getStatusText(activeItem.customerApproved) === 'Отклонено',
-    'work__status--yellow': getStatusText(activeItem.customerApproved) === 'Отложено',
-}">
-                    <span class="dot"></span>   {{ getStatusText(activeItem.customerApproved) }}
+                <div class="work__status" :class="statusClass(statusText(activeItem))">
+                    <span class="dot"></span> {{ statusText(activeItem) }}
                 </div>
                 <div class="work__time" v-if="activeItemTimeHours > 0">
                     ~ {{ formatTime(activeItemTimeHours) }}

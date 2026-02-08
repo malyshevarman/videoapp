@@ -14,13 +14,50 @@ import StickyFooter from './components/StickyFooter.vue'
 import RejectModal from './components/RejectModal.vue'
 import DeferredModal from './components/DeferredModal.vue'
 
-const props = defineProps({
-    service: Object,
-    items: Array,
-})
-const localItems = ref(Array.isArray(props.items) ? structuredClone(props.items) : [])
+type Service = {
+    id?: number | string
+    visitStartTime?: string | Date
+    client?: { customerFirstName?: string }
+    surveyObject?: { carBrand?: string; carModelCode?: string; carLicensePlate?: string }
+    responsibleEmployee?: { specialistFirstName?: string; specialistLastName?: string }
+}
 
-const activeItem = ref(null)
+type DetailRow = {
+    lineId: string
+    positionType: string
+    positionName: string
+    positionQuantity?: number
+    positionMeasure?: string
+    positionAmountIncVat?: number
+    positionAmountExVat?: number
+}
+
+type CustomerApproved = 'approved' | 'rejected' | 'deferred' | 'callback'
+
+type Item = {
+    id: number | string
+    title: string
+    details?: DetailRow[]
+    image?: string
+    time?: number
+    customerApproved?: CustomerApproved
+    answerStatus?: string
+    deferredTaskDate?: string | null
+}
+
+const props = defineProps({
+    service: {
+        type: Object as () => Service,
+        required: true,
+    },
+    items: {
+        type: Array as () => Item[],
+        default: () => [],
+    },
+})
+const localItems = ref<Item[]>(Array.isArray(props.items) ? structuredClone(props.items) : [])
+
+const activeItem = ref<Item | null>(null)
 
 const videoData = ref(null)
 const videoUrl = ref(null)
@@ -35,10 +72,11 @@ onMounted(() => {
     }
 });
 
-const activeIndex = computed(() => {
-    if (!activeItem.value) return -1
-    return localItems.value.findIndex(i => i.id === activeItem.value.id)
-})
+const activeIndex = computed(() =>
+    activeItem.value
+        ? localItems.value.findIndex(i => i.id === activeItem.value?.id)
+        : -1
+)
 const isFirst = computed(() => activeIndex.value <= 0)
 
 const isLast = computed(() =>
@@ -56,9 +94,9 @@ const approvedStats = computed(() => {
         (acc, item) => {
             if (item.customerApproved !== 'approved') return acc
 
-            acc.count++
+            acc.count += 1
 
-            item.details.forEach(d => {
+            item.details?.forEach(d => {
                 acc.sumExVat += Number(d.positionAmountExVat || 0)
                 acc.sumIncVat += Number(d.positionAmountIncVat || 0)
             })
@@ -82,45 +120,40 @@ const loadVideo = async () => {
     videoUrl.value = data.url
 }
 
+const STATUS_META = {
+    red: 'Обязательные работы',
+    yellow: 'Необходимые работы',
+    green: 'Информационные работы',
+    default: 'Дополнительные продажи',
+} as const
+
 const statusMeta = computed(() => {
     if (!activeItem.value) return null
 
-    switch (activeItem.value.answerStatus) {
-        case 'red':
-            return {
-                title: 'Обязательные работы',
-            }
-
-        case 'yellow':
-            return {
-                title: 'Необходимые работы',
-            }
-
-        case 'green':
-            return {
-                title: 'Информационные работы',
-            }
-
-        default:
-            return {
-                title: 'Дополнительные продажи',
-            }
+    return {
+        title:
+            STATUS_META[activeItem.value.answerStatus as keyof typeof STATUS_META] ??
+            STATUS_META.default,
     }
 })
-function getStatusText(customerApproved) {
-    if (customerApproved === 'approved') return 'Согласовано'
-    if (customerApproved === 'rejected') return 'Отклонено'
-    if (customerApproved === 'deferred') return 'Отложено'
-    if (customerApproved === 'callback') return 'Звонок'
-    return '—'
+
+const STATUS_TEXT = {
+    approved: 'Согласовано',
+    rejected: 'Отклонено',
+    deferred: 'Отложено',
+    callback: 'Звонок',
+} as const
+
+function getStatusText(customerApproved?: CustomerApproved) {
+    return STATUS_TEXT[customerApproved ?? ''] ?? '—'
 }
-function selectItem(item) {
+function selectItem(item: Item) {
     activeItem.value = item
     nextTick(() => {
         seekTo(item.time) // time в секундах
     })
 }
-function seekTo(seconds: unknown) {
+function seekTo(seconds: number | undefined) {
     const video = previewVideo.value
     if (!video) return
 
@@ -138,15 +171,6 @@ function seekTo(seconds: unknown) {
 
     // если уже всё ок
     video.currentTime = Math.min(t, Number.isFinite(video.duration) ? video.duration : t)
-}
-type DetailRow = {
-    lineId: string
-    positionType: string
-    positionName: string
-    positionQuantity?: number
-    positionMeasure?: string
-    positionAmountIncVat?: number
-    positionAmountExVat?: number
 }
 
 const groups = computed(() => {
@@ -174,22 +198,6 @@ const minDeferredDate = computed(() => dayjs().add(1, 'day').startOf('day').toDa
 // максимум +90 дней
 const maxDeferredDate = computed(() => dayjs().add(90, 'day').toDate())
 
-function applyDeferredDate(d: Date | null) {
-    if (!d || !activeItem.value) return
-
-    const iso = dayjs(d).format('YYYY-MM-DD')
-
-    const id = activeItem.value.id
-    const idx = localItems.value.findIndex((i: any) => i.id === id)
-
-    if (idx !== -1) {
-        localItems.value[idx].deferredTaskDate = iso
-        activeItem.value = localItems.value[idx] // обновим ссылку
-    } else {
-        activeItem.value.deferredTaskDate = iso
-    }
-}
-
 function money(v: unknown) {
     const n = Number(v ?? 0)
     return n.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₽'
@@ -200,29 +208,27 @@ const activeItemTimeHours = computed(() => {
     if (!activeItem.value) return 0
 
     return (activeItem.value.details ?? [])
-        .filter((r: any) => String(r.positionMeasure).toUpperCase() === 'ЧАС')
-        .reduce((sum: number, r: any) => {
+        .filter(r => String(r.positionMeasure).toUpperCase() === 'ЧАС')
+        .reduce((sum: number, r) => {
             return sum + Number(r.positionQuantity ?? 0)
         }, 0)
 })
 function formatTime(hours: number) {
     return `${hours} ч.`
 }
-type CustomerApproved = 'approved' | 'rejected' | 'deferred' | 'callback'
-
 function setCustomerApproved(status: CustomerApproved) {
     if (!activeItem.value) return
 
-    const id = (activeItem.value as any).id
+    const id = activeItem.value.id
 
-    const idx = localItems.value.findIndex((i: any) => i.id === id)
-    const target = idx !== -1 ? localItems.value[idx] : (activeItem.value as any)
+    const idx = localItems.value.findIndex(i => i.id === id)
+    const target = idx !== -1 ? localItems.value[idx] : activeItem.value
 
     target.customerApproved = status
 
     // ✅ дата нужна только для deferred
     if (status !== 'deferred') {
-        target.deferredTaskDate = ""
+        target.deferredTaskDate = ''
     }
 
     // чтобы activeItem точно ссылался на объект из массива
@@ -245,33 +251,30 @@ function confirmReject() {
     setCustomerApproved('rejected')
     closeRejectConfirm()
 
-    const index =
-        localItems.value.findIndex(i => i.id === (activeItem.value as any).id) + 1
+    const index = localItems.value.findIndex(i => i.id === activeItem.value?.id) + 1
 
     toast.info(`Предложение ${index} отклонено`, {
         description: activeItem.value.title,
     })
 }
 
-type AnyItem = { id: any; deferredTaskDate?: string | null }
-
 function syncActiveToLocal() {
     if (!activeItem.value) return
-    const id = (activeItem.value as any).id
-    const idx = localItems.value.findIndex((i: any) => i.id === id)
+    const id = activeItem.value.id
+    const idx = localItems.value.findIndex(i => i.id === id)
     if (idx !== -1) {
-        localItems.value[idx].deferredTaskDate = (activeItem.value as any).deferredTaskDate ?? null
+        localItems.value[idx].deferredTaskDate = activeItem.value.deferredTaskDate ?? null
         activeItem.value = localItems.value[idx] // держим ссылку на объект из массива
     }
 }
 
 const deferredTaskDateModel = computed<string | null>({
     get() {
-        return (activeItem.value as any)?.deferredTaskDate ?? null
+        return activeItem.value?.deferredTaskDate ?? null
     },
     set(v) {
         if (!activeItem.value) return
-            ;(activeItem.value as any).deferredTaskDate = v
+            ;(activeItem.value as Item).deferredTaskDate = v
         syncActiveToLocal()
     },
 })
@@ -283,26 +286,25 @@ function updateDeferredTaskDate(value: string | null) {
 function openDeferredModal() {
     if (!activeItem.value) return
         // если хочешь каждый раз чистить дату:
-        ;(activeItem.value as any).deferredTaskDate = null
+        ;(activeItem.value as Item).deferredTaskDate = null
     syncActiveToLocal()
     isDeferredOpen.value = true
 }
 
 function closeDeferredModal(clear = true) {
     if (clear && activeItem.value) {
-        ;(activeItem.value as any).deferredTaskDate = ''
+        ;(activeItem.value as Item).deferredTaskDate = ''
         syncActiveToLocal()
     }
 
     isDeferredOpen.value = false
 }
 function confirmDeferred() {
-    if (!activeItem.value || !(activeItem.value as any).deferredTaskDate) return
+    if (!activeItem.value || !activeItem.value.deferredTaskDate) return
     setCustomerApproved('deferred')
     closeDeferredModal(false) // ✅ НЕ чистим дату
 
-    const index =
-        localItems.value.findIndex(i => i.id === (activeItem.value as any).id) + 1
+    const index = localItems.value.findIndex(i => i.id === activeItem.value?.id) + 1
 
     toast.info(`Предложение ${index} отложено`, {
         description: activeItem.value.title,
@@ -323,8 +325,7 @@ function approveActiveItem() {
 
     setCustomerApproved('approved')
 
-    const index =
-        localItems.value.findIndex(i => i.id === (activeItem.value as any).id) + 1
+    const index = localItems.value.findIndex(i => i.id === activeItem.value?.id) + 1
 
     toast.info(`Предложение ${index} согласовано`, {
         description: activeItem.value.title,
@@ -365,7 +366,7 @@ const approvedItemsList = computed(() => {
         .filter(i => i.customerApproved === 'approved')
         .map(i => {
             const sum = (i.details ?? []).reduce(
-                (s: number, r: any) => s + Number(r.positionAmountIncVat ?? 0),
+                (s: number, r) => s + Number(r.positionAmountIncVat ?? 0),
                 0
             )
             return { id: i.id, title: i.title, sum }
@@ -375,11 +376,11 @@ const approvedItemsList = computed(() => {
 const approvedRepairTimeHours = computed(() => {
     return localItems.value
         .filter(i => i.customerApproved === 'approved')
-        .reduce((sum, item: any) => {
+        .reduce((sum, item) => {
             const rows = item.details ?? []
             const hours = rows
-                .filter((r: any) => String(r.positionMeasure ?? '').toUpperCase() === 'ЧАС')
-                .reduce((s: number, r: any) => s + Number(r.positionQuantity ?? 0), 0)
+                .filter(r => String(r.positionMeasure ?? '').toUpperCase() === 'ЧАС')
+                .reduce((s: number, r) => s + Number(r.positionQuantity ?? 0), 0)
 
             return sum + hours
         }, 0)
