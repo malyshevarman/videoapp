@@ -111,6 +111,28 @@ console.log('item-',item)
     )
 })
 
+const deferredStats = computed(() => {
+    return localItems.value.reduce(
+        (acc, item) => {
+            if (item.customerApproved !== 'deferred') return acc
+
+            acc.count += 1
+
+            item.details?.forEach(d => {
+                acc.sumExVat += Number(d.positionAmountExVat || 0)
+                acc.sumIncVat += Number(d.positionAmountIncVat || 0)
+            })
+
+            return acc
+        },
+        {
+            count: 0,
+            sumExVat: 0,
+            sumIncVat: 0,
+        }
+    )
+})
+
 const loadVideo = async () => {
     const res = await fetch(`/video?service_order_id=${props.service.id}`)
     if (res.status === 204) return
@@ -392,6 +414,18 @@ const approvedItemsList = computed(() => {
         })
 })
 
+const deferredItemsList = computed(() => {
+    return localItems.value
+        .filter(i => i.customerApproved === 'deferred')
+        .map(i => {
+            const sum = (i.details ?? []).reduce(
+                (s: number, r) => s + Number(r.positionAmountIncVat ?? 0),
+                0
+            )
+            return { id: i.id, title: i.title, sum }
+        })
+})
+
 const approvedRepairTimeHours = computed(() => {
     return localItems.value
         .filter(i => i.customerApproved === 'approved')
@@ -585,6 +619,8 @@ const approvedRepairTimeHours = computed(() => {
             :sticky-open="stickyOpen"
             :approved-stats="approvedStats"
             :approved-items-list="approvedItemsList"
+            :deferred-stats="deferredStats"
+            :deferred-items-list="deferredItemsList"
             :approved-repair-time-hours="approvedRepairTimeHours"
             :items-length="items.length"
             :is-first="isFirst"
