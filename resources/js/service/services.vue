@@ -533,41 +533,4 @@ const openUrl = async (event) => {
     line-height: 1.4;
 }
 
-@media (max-width: 767.98px) {
-    .list-group-item.defect-item {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .defect-meta {
-        flex-wrap: wrap;
-    }
-
-    .timeel {
-        width: 100%;
-        color: #0d6efd;
-    }
-
-    .timeel .form-control {
-        width: 100%;
-        margin: 0 0 0.4rem 0;
-    }
-
-    .defect-actions {
-        width: 100%;
-    }
-
-    .defect-actions .btn {
-        width: 100%;
-    }
-
-    .btn-group-toggle .btn {
-        flex: 1 1 30%;
-    }
-
-    .status-legend {
-        width: 100%;
-        font-size: 0.8rem;
-    }
-}
 </style>
