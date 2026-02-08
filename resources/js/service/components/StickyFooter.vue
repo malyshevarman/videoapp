@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { PropType } from 'vue'
+import { computed, ref } from 'vue'
 
 type ApprovedStats = {
     count: number
@@ -12,7 +13,7 @@ type ApprovedItem = {
     sum: number
 }
 
-defineProps({
+const props = defineProps({
     stickyOpen: {
         type: Boolean,
         required: true,
@@ -22,6 +23,14 @@ defineProps({
         required: true,
     },
     approvedItemsList: {
+        type: Array as PropType<ApprovedItem[]>,
+        required: true,
+    },
+    deferredStats: {
+        type: Object as PropType<ApprovedStats>,
+        required: true,
+    },
+    deferredItemsList: {
         type: Array as PropType<ApprovedItem[]>,
         required: true,
     },
@@ -64,24 +73,39 @@ defineProps({
 })
 
 const emit = defineEmits(['toggle'])
+const showDeferred = ref(false)
+const activeStats = computed(() => (showDeferred.value ? props.deferredStats : props.approvedStats))
+const activeItemsList = computed(() =>
+    showDeferred.value ? props.deferredItemsList : props.approvedItemsList
+)
+const detailsTitle = computed(() =>
+    showDeferred.value ? 'Детали заказа на работы' : 'Детали заказа'
+)
+const summaryLabel = computed(() =>
+    showDeferred.value ? 'Отложенные работы:' : 'Согласовано работ:'
+)
+
+function toggleDeferredView() {
+    showDeferred.value = !showDeferred.value
+}
 </script>
 
 <template>
     <div class="sticky">
         <div class="container">
-            <div class="" v-if="approvedStats.count">
+            <div class="" v-if="activeStats.count">
                 <div class="sticky__head"
                      :class="{ 'is-open': stickyOpen }"
                      @click="emit('toggle')">
                     <div class="sticky__head-title">
-                        Детали заказа <span>({{ approvedItemsList.length }})</span>
+                        {{ detailsTitle }} <span>({{ activeItemsList.length }})</span>
                     </div>
                 </div>
 
                 <Transition name="sticky-acc">
                     <div v-show="stickyOpen" class="sticky__body">
-                        <div class="sticky__list" v-if="approvedItemsList.length">
-                            <div class="sticky__list-row" v-for="w in approvedItemsList" :key="w.id">
+                        <div class="sticky__list" v-if="activeItemsList.length">
+                            <div class="sticky__list-row" v-for="w in activeItemsList" :key="w.id">
                                 <div class="sticky__list-title">{{ w.title }}</div>
                                 <div class="sticky__list-sum">{{ money(w.sum) }}</div>
                             </div>
@@ -93,27 +117,35 @@ const emit = defineEmits(['toggle'])
             <div class="sticky__bar">
                 <div class="col_left">
                     <div class="sticky__left">
-                        <div class="sticky__label">Согласовано работ:</div>
+                        <div class="sticky__label">{{ summaryLabel }}</div>
                         <div class="sticky__value"><span
-                            class="sticky__value-accent">{{ approvedStats.count }}</span> из {{ itemsLength }}
+                            class="sticky__value-accent">{{ activeStats.count }}</span> из {{ itemsLength }}
                         </div>
                     </div>
                     <div class="mrg"></div>
 
                     <div class="sticky__mid">
                         <div class="sticky__label">Итого:</div>
-                        <div class="sticky__sum">{{ approvedStats.sumIncVat.toFixed(2) }} ₽</div>
+                        <div class="sticky__sum">{{ activeStats.sumIncVat.toFixed(2) }} ₽</div>
                     </div>
                 </div>
                 <div class="col_right">
 
-                    <div class="text__job" v-if="approvedStats.count">
+                    <div class="text__job" v-if="approvedStats.count && !showDeferred">
                         Ориентировочное время ремонта {{ approvedRepairTimeHours }} ч.<br/>
                         после согласования ремонтных работ
                     </div>
 
                     <div class="mrg"></div>
                     <div class="sticky__right">
+                        <button
+                            v-if="isLast && deferredStats.count"
+                            class="btn btn--ghost"
+                            type="button"
+                            @click="toggleDeferredView"
+                        >
+                            {{ showDeferred ? 'Назад' : 'Отложенные работы' }}
+                        </button>
                         <button
                             class="btn btn--ghost"
                             type="button"
