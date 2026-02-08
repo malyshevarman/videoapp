@@ -274,7 +274,7 @@ class ExternalServiceController extends Controller
             $validator = Validator::make($request->all(), [
                 'service_order_id' => 'required|exists:service_orders,id',
                 'original_name' => 'required|string',
-                'total_duration' => 'required|integer',
+                'total_duration' => 'required|integer|min:0',
                 'total_chunks' => 'required|integer|min:1',
             ]);
 

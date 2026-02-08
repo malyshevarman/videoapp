@@ -48,6 +48,14 @@ const stopReason = ref(null) // 'pause' | 'final' | null
 // Таймер для отображения времени записи
 let recordingTimer = null
 
+const chunkSummary = computed(() => {
+    if (!isRecording.value) return null
+    const total = chunkInfo.value.totalChunks
+    const current = chunkInfo.value.currentChunk
+    if (!total || total <= 1 || !current) return null
+    return { current, total }
+})
+
 const setVH = () => {
     const vh = window.innerHeight * 0.01
     document.documentElement.style.setProperty('--vh', `${vh}px`)
@@ -428,6 +436,8 @@ const startNewChunk = async () => {
                 })
                 currentChunk = []
             }
+            chunkInfo.value.totalChunks = videoChunks.length
+            chunkInfo.value.currentChunk = videoChunks.length
 
             // если это финальная остановка — отправляем
             if (stopReason.value === 'final') {
@@ -441,6 +451,8 @@ const startNewChunk = async () => {
         }, 200)
     }
 
+    chunkInfo.value.currentChunk = videoChunks.length + 1
+    chunkInfo.value.totalChunks = Math.max(chunkInfo.value.totalChunks, chunkInfo.value.currentChunk)
     chunkInfo.value.chunkStartTime = Date.now()
     mediaRecorder.start()
 }
@@ -728,8 +740,8 @@ const getStatusColor = (status) => {
                     <div class="recording-time">
                         {{ formatTime(totalRecordingTime) }}
                     </div>
-                    <div class="chunk-info" v-if="chunkInfo.totalChunks > 1">
-                        Часть {{ chunkInfo.currentChunk }} из {{ chunkInfo.totalChunks }}
+                    <div class="chunk-info" v-if="chunkSummary">
+                        Часть {{ chunkSummary.current }} из {{ chunkSummary.total }}
                     </div>
                 </div>
             </div>
@@ -1223,11 +1235,14 @@ body {
 }
 
 .chunk-info {
-    background: rgba(0, 0, 0, 0.6);
-    color: white;
-    padding: 4px 12px;
-    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.65);
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 999px;
     font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
 }
 
 @keyframes blink {
