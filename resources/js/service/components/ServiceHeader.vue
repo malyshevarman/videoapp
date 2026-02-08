@@ -83,9 +83,10 @@ defineProps({
                         </div>
                         <div class="kv__row">
                             <div class="kv__k">Механик:</div>
-                            <div class="kv__v">Старовойтов А. М.</div>
+                            <div class="kv__v"> {{ service?.mechanic?.name }}</div>
                         </div>
                     </div>
+
 
                     <div class="top__links">
                         <div class="top__links-title">Первичный осмотр:</div>
@@ -112,6 +113,8 @@ defineProps({
                             Результат проверки автомобиля
                         </a>
                     </div>
+
+
                 </div>
 
                 <button class="top__collapse" type="button" aria-label="Свернуть">

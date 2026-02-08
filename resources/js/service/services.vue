@@ -84,7 +84,7 @@ const newDefect = reactive({
 
 
 const loadVideo = async () => {
-    const res = await fetch(`/api/video?service_order_id=${service.id}`)
+    const res = await fetch(`/video?service_order_id=${service.id}`)
     if (res.status === 204) return
 
     const data = await res.json()
@@ -122,9 +122,15 @@ const removeDefect = (index) => {
 
 // Сохранение неисправностей
 const saveDefects = async () => {
-    await fetch('/api/video/defects', {
+    await fetch('/video/defects', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document
+                .querySelector('meta[name="csrf-token"]')
+                .getAttribute('content'),
+            'Accept': 'application/json',
+        },
         body: JSON.stringify({
             service_id: service.id,
             defects: defects.value.map(({ id, time, title, status }) => ({ id, time, title, status }))

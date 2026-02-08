@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\AdminController;
-
+use App\Http\Controllers\Api\ExternalServiceController;
 
 Auth::routes();
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -13,6 +13,17 @@ Route::get('/video/play/{id}', [HomeController::class, 'videoplay'])
     ->name('videos.play');
 
 Route::get('/services/{public_url}/show', [HomeController::class, 'showservices'])->name('services.show');
+Route::post('/services/{public_url}/update', [HomeController::class, 'updateservices'])
+    ->name('services.update');
+
+
+Route::get('video', [ExternalServiceController::class, 'show']);
+Route::middleware('auth')->prefix('video')->group(function () {
+    Route::post('upload-chunks', [ExternalServiceController::class, 'uploadChunks']);
+    Route::post('defects', [ExternalServiceController::class, 'defects']);
+    Route::delete('/', [ExternalServiceController::class, 'destroy']);
+});
+
 
 Route::middleware(['auth', 'admin'])
     ->prefix('admin')

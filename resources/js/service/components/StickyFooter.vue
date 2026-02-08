@@ -102,7 +102,7 @@ const emit = defineEmits(['toggle'])
 
                     <div class="sticky__mid">
                         <div class="sticky__label">Итого:</div>
-                        <div class="sticky__sum">{{ approvedStats.sumIncVat }} ₽</div>
+                        <div class="sticky__sum">{{ approvedStats.sumIncVat.toFixed(2) }} ₽</div>
                     </div>
                 </div>
                 <div class="col_right">

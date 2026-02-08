@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\ServiceOrder;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\JsonResponse;
 use App\Models\Video;
@@ -53,7 +54,32 @@ class ExternalServiceController extends Controller
 
         // сохраняем
         $service->tasks = $mergedTasks;
-        $service->defects = $request->defects; // если нужно хранить отдельно
+        $service->defects = $request->defects;
+
+        if (is_null($service->mechanic_id)) {
+            $service->mechanic_id = Auth::id();
+        }
+
+        $records = $service->processStatusRecords ?? [];
+        if (!is_array($records)) {
+            $records = [];
+        }
+        $exists = collect($records)->contains(fn ($r) =>
+            ($r['status'] ?? null) === 'quotesCreated'
+        );
+
+        if (!$exists) {
+            $records[] = [
+                'id' => (string) Str::uuid(),
+                'status' => 'quotesCreated',
+                'timestamp' => now()->toISOString(),
+            ];
+
+            $service->processStatusRecords = $records;
+            $service->processStatus = 'quotesCreated';
+            $service->save();
+        }
+
         $service->save();
 
         $defects = is_string($request->defects) ? json_decode($request->defects, true) : $request->defects;

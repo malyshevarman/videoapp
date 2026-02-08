@@ -100,7 +100,7 @@ const approvedStats = computed(() => {
                 acc.sumExVat += Number(d.positionAmountExVat || 0)
                 acc.sumIncVat += Number(d.positionAmountIncVat || 0)
             })
-
+console.log('item-',item)
             return acc
         },
         {
@@ -112,7 +112,7 @@ const approvedStats = computed(() => {
 })
 
 const loadVideo = async () => {
-    const res = await fetch(`/api/video?service_order_id=${props.service.id}`)
+    const res = await fetch(`/video?service_order_id=${props.service.id}`)
     if (res.status === 204) return
 
     const data = await res.json()
@@ -336,12 +336,31 @@ function approveActiveItem() {
 function submitAll() {
     if (!allHaveStatus.value) return
 
-    console.log('Готово:', localItems.value)
-
-    toast.success('Решение принято', {
-        description: 'Все предложения обработаны',
+    fetch(`/services/${props.service.public_url}/update`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document
+                .querySelector('meta[name="csrf-token"]')
+                .getAttribute('content'),
+            'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+            items: localItems.value,
+        }),
     })
+        .then(res => res.json())
+        .then(data => {
+            toast.success('Решение принято', {
+                description: 'Все предложения обработаны',
+            })
+        })
+        .catch(err => {
+            console.error(err)
+        })
 }
+
+
 function goNext() {
     if (isLast.value) return
     activeItem.value = localItems.value[activeIndex.value + 1]
@@ -353,7 +372,7 @@ function goPrev() {
 }
 const allHaveStatus = computed(() =>
     localItems.value.every(i =>
-        ['approved', 'rejected', 'deferred', 'callback'].includes(i.customerApproved)
+        ['approved', 'rejected', 'deferred'].includes(i.customerApproved)
     )
 )
 

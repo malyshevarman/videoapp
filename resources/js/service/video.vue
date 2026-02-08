@@ -570,11 +570,16 @@ const sendVideoToServer = async () => {
         }
 
         uploadStatus.value = 'Отправка видео на сервер...'
+        const token = document
+            .querySelector('meta[name="csrf-token"]')
+            .getAttribute('content')
 
         const result = await new Promise((resolve, reject) => {
             const xhr = new XMLHttpRequest()
-            xhr.open('POST', '/api/video/upload-chunks', true)
+            xhr.open('POST', '/video/upload-chunks', true)
             xhr.responseType = 'json'
+            xhr.setRequestHeader('X-CSRF-TOKEN', token)
+            xhr.setRequestHeader('Accept', 'application/json')
 
             xhr.upload.onprogress = (e) => {
                 if (!e.lengthComputable) return
