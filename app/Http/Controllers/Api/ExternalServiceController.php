@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Storage;
 use FFMpeg\FFMpeg;
 use FFMpeg\Coordinate\TimeCode;
 use Illuminate\Support\Str;
+use Symfony\Component\Process\Process;
 
 class ExternalServiceController extends Controller
 {
@@ -336,36 +337,71 @@ class ExternalServiceController extends Controller
                 $video->delete();
             }
 
-            // Объединяем чанки в один файл
             $finalFileName = 'video_' . $serviceOrderId . '_' . time() . '.mp4';
             $finalPath = 'videos/' . $finalFileName;
             $finalFullPath = Storage::disk('videos')->path($finalPath);
 
-            // Создаем директорию если не существует
-            $finalDir = storage_path('app/public/videos');
-            if (!is_dir($finalDir)) {
-                mkdir($finalDir, 0755, true);
-            }
-
-            $finalFileName = 'video_' . $serviceOrderId . '_' . time() . '.mp4';
-            $finalPath = 'videos/' . $finalFileName;
-
-// Создаем директорию, если нужно
             Storage::disk('videos')->makeDirectory('videos');
 
-// Объединяем чанки
-            $finalStream = fopen(Storage::disk('videos')->path($finalPath), 'wb');
+            if ($totalChunks === 1) {
+                $singleChunkPath = $tempDir . '/chunk_' . str_pad(0, 4, '0', STR_PAD_LEFT);
+                if (!rename($singleChunkPath, $finalFullPath)) {
+                    throw new \RuntimeException('Unable to move single chunk to final video.');
+                }
+            } else {
+                $listPath = $tempDir . '/chunks.txt';
+                $listContent = '';
+
+                for ($i = 0; $i < $totalChunks; $i++) {
+                    $chunkPath = $tempDir . '/chunk_' . str_pad($i, 4, '0', STR_PAD_LEFT);
+                    if (file_exists($chunkPath)) {
+                        $escapedPath = str_replace("'", "'\\''", $chunkPath);
+                        $listContent .= "file '{$escapedPath}'\n";
+                    }
+                }
+
+                file_put_contents($listPath, $listContent);
+
+                $process = new Process([
+                    'ffmpeg',
+                    '-y',
+                    '-f',
+                    'concat',
+                    '-safe',
+                    '0',
+                    '-i',
+                    $listPath,
+                    '-c',
+                    'copy',
+                    $finalFullPath,
+                ]);
+                $process->setTimeout(120);
+                $process->run();
+
+                if (!$process->isSuccessful()) {
+                    \Log::warning('FFmpeg concat failed, falling back to binary merge.', [
+                        'error' => $process->getErrorOutput(),
+                    ]);
+
+                    $finalStream = fopen($finalFullPath, 'wb');
+                    for ($i = 0; $i < $totalChunks; $i++) {
+                        $chunkPath = $tempDir . '/chunk_' . str_pad($i, 4, '0', STR_PAD_LEFT);
+                        if (file_exists($chunkPath)) {
+                            $chunkHandle = fopen($chunkPath, 'rb');
+                            stream_copy_to_stream($chunkHandle, $finalStream);
+                            fclose($chunkHandle);
+                        }
+                    }
+                    fclose($finalStream);
+                }
+            }
 
             for ($i = 0; $i < $totalChunks; $i++) {
                 $chunkPath = $tempDir . '/chunk_' . str_pad($i, 4, '0', STR_PAD_LEFT);
                 if (file_exists($chunkPath)) {
-                    $chunkHandle = fopen($chunkPath, 'rb');
-                    stream_copy_to_stream($chunkHandle, $finalStream);
-                    fclose($chunkHandle);
                     unlink($chunkPath);
                 }
             }
-            fclose($finalStream);
 
             // Удаляем временную директорию
             if (is_dir($tempDir)) {
