@@ -270,6 +270,43 @@ class HomeController extends Controller
         }
 
         $service->details = $details;
+
+        $sumEx = 0;
+        $sumInc = 0;
+
+        foreach ($details as $detail) {
+            $variants = $detail['answers'][0]['packages'][0]['variants'] ?? [];
+            if (!is_array($variants)) continue;
+
+            foreach ($variants as $variant) {
+                // считаем только согласованные
+                if (($variant['customerApproved'] ?? null) !== 'approved') continue;
+
+                $vDetails = $variant['details'] ?? [];
+                if (!is_array($vDetails)) continue;
+
+                foreach ($vDetails as $pos) {
+                    if (!is_array($pos)) continue;
+
+                    $sumEx  += (float) ($pos['positionAmountExVat']  ?? 0);
+                    $sumInc += (float) ($pos['positionAmountIncVat'] ?? 0);
+                }
+            }
+        }
+
+// округлим до 2 знаков (чтобы не было 0.30000000004)
+        $sumEx  = round($sumEx, 2);
+        $sumInc = round($sumInc, 2);
+
+// referenceObject тоже может быть null/строкой — нормализуем
+        $ref = $service->referenceObject ?? [];
+        if (!is_array($ref)) $ref = [];
+
+        $ref['orderAmountExVat']  = $sumEx;
+        $ref['orderAmountIncVat'] = $sumInc;
+
+        $service->referenceObject = $ref;
+
         $service->completed=true;
         $service->save();
 

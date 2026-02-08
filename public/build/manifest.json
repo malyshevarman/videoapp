@@ -1,11 +1,23 @@
 {
+  "resources/images/arrowdown.svg": {
+    "file": "assets/arrowdown-CCKdEwmj.svg",
+    "src": "resources/images/arrowdown.svg"
+  },
+  "resources/images/info.svg": {
+    "file": "assets/info-7r580py2.svg",
+    "src": "resources/images/info.svg"
+  },
+  "resources/images/logo.svg": {
+    "file": "assets/logo-DatOAv7x.svg",
+    "src": "resources/images/logo.svg"
+  },
   "resources/js/app.js": {
-    "file": "assets/app-B3nmZH7E.js",
+    "file": "assets/app-CUGl9aFr.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
     "css": [
-      "assets/app-BHuA0O4-.css"
+      "assets/app-T_l4K9G8.css"
     ]
   },
   "resources/sass/app.scss": {
@@ -14,7 +26,7 @@
     "isEntry": true
   },
   "resources/sass/appstyle.scss": {
-    "file": "assets/appstyle-KGxEOBcS.css",
+    "file": "assets/appstyle-D0FXA7Hz.css",
     "src": "resources/sass/appstyle.scss",
     "isEntry": true
   },
