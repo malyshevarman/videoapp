@@ -215,9 +215,9 @@ const openUrl = async (event) => {
                                 handle=".handle"
                             >
                                 <template #item="{ element, index }">
-                                    <div class="list-group-item d-flex align-items-center justify-content-between">
+                                    <div class="list-group-item defect-item d-flex align-items-center justify-content-between">
 
-                                        <div class="d-flex align-items-center">
+                                        <div class="defect-meta d-flex align-items-center">
 
                                             <!-- 🔥 Хэндл для перетаскивания -->
                                             <span class="handle mr-2">
@@ -251,7 +251,7 @@ const openUrl = async (event) => {
                 </span>
                                         </div>
 
-                                        <div class="actions">
+                                        <div class="actions defect-actions">
                                             <button
                                                 class="btn btn-sm btn-outline-danger"
                                                 @click="removeDefect(index)"
@@ -322,8 +322,8 @@ const openUrl = async (event) => {
 
                             <div class="form-group">
                                 <label>Статус</label>
-                                <div class="d-flex align-items-center">
-                                    <div class="btn-group btn-group-toggle mr-3" data-toggle="buttons">
+                                <div class="d-flex align-items-center status-row">
+                                    <div class="btn-group btn-group-toggle mr-3 status-group" data-toggle="buttons">
                                         <label class="btn btn-outline-success" :class="{ active: newDefect.status === 'green' }">
                                             <input type="radio" v-model="newDefect.status" value="green"> ✓
                                         </label>
@@ -334,7 +334,7 @@ const openUrl = async (event) => {
                                             <input type="radio" v-model="newDefect.status" value="red"> ✕
                                         </label>
                                     </div>
-                                    <div class="status-example">
+                                    <div class="status-example status-legend">
                                         <span class="status-icon status-green">✓</span> - Норма
                                         <span class="status-icon status-yellow ml-2">●</span> - Внимание
                                         <span class="status-icon status-red ml-2">✕</span> - Проблема
@@ -503,6 +503,71 @@ const openUrl = async (event) => {
     .form-control{
         width: 80px;
         margin: 0 10px 0 0;
+    }
+}
+
+.defect-item {
+    gap: 0.5rem;
+}
+
+.defect-meta {
+    gap: 0.5rem;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.defect-actions {
+    flex-shrink: 0;
+}
+
+.status-row {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.status-group {
+    flex-wrap: wrap;
+}
+
+.status-legend {
+    line-height: 1.4;
+}
+
+@media (max-width: 767.98px) {
+    .list-group-item.defect-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .defect-meta {
+        flex-wrap: wrap;
+    }
+
+    .timeel {
+        width: 100%;
+        color: #0d6efd;
+    }
+
+    .timeel .form-control {
+        width: 100%;
+        margin: 0 0 0.4rem 0;
+    }
+
+    .defect-actions {
+        width: 100%;
+    }
+
+    .defect-actions .btn {
+        width: 100%;
+    }
+
+    .btn-group-toggle .btn {
+        flex: 1 1 30%;
+    }
+
+    .status-legend {
+        width: 100%;
+        font-size: 0.8rem;
     }
 }
 </style>
