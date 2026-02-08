@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import type { PropType } from 'vue'
 
 type DetailRow = {
@@ -75,6 +76,14 @@ const statusClass = (text: string) => ({
     'work__status--red': text === 'Отклонено',
     'work__status--yellow': text === 'Отложено',
 })
+
+const openGroups = ref<Record<number, boolean>>({})
+
+const isGroupOpen = (index: number) => openGroups.value[index] !== false
+
+const toggleGroup = (index: number) => {
+    openGroups.value[index] = !isGroupOpen(index)
+}
 </script>
 
 <template>
@@ -119,14 +128,27 @@ const statusClass = (text: string) => ({
             <div class="work__cols">
                 <div class="work__list">
                     <div class="work__group" v-for="(g, gi) in groups" :key="gi">
-                        <div class="work__group-title">
+                        <div
+                            class="work__group-title"
+                            role="button"
+                            tabindex="0"
+                            :aria-expanded="isGroupOpen(gi)"
+                            @click="toggleGroup(gi)"
+                            @keydown.enter.prevent="toggleGroup(gi)"
+                            @keydown.space.prevent="toggleGroup(gi)"
+                        >
                             {{ g.title }}
                             <span class="chev">^</span>
                             <span class="mrg"></span>
                             <div class="work__price">{{ money(g.total) }}</div>
                         </div>
 
-                        <div class="work__row" v-for="row in g.rows" :key="row.lineId">
+                        <div
+                            class="work__row"
+                            v-for="row in g.rows"
+                            :key="row.lineId"
+                            v-show="isGroupOpen(gi)"
+                        >
                             <div class="work__name">
                                 {{ row.positionName }}
                                 <small v-if="row.positionQuantity">
