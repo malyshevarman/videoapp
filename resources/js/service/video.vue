@@ -448,30 +448,37 @@ const startNewChunk = async () => {
 const togglePauseRecording = async () => {
     if (!isRecording.value || !mediaRecorder) return
 
-    // PAUSE: всегда режем чанк
+    // pause
     if (!isPaused.value) {
         isPaused.value = true
         pauseStartTime = Date.now()
         clearTimer()
 
-        stopReason.value = 'pause'
-
-        // важно: перед stop принудительно сбросить буфер
-        try { mediaRecorder.requestData?.() } catch(e) {}
-
-        if (mediaRecorder.state !== 'inactive') mediaRecorder.stop()
+        // если поддерживается нативная пауза — используем её
+        if (mediaRecorder.state === 'recording' && mediaRecorder.pause) {
+            mediaRecorder.pause()
+        } else {
+            // fallback: режем чанк через stop
+            stopReason.value = 'pause'
+            if (mediaRecorder.state !== 'inactive') mediaRecorder.stop()
+        }
         return
     }
 
-    // RESUME: стартуем новый чанк
+    // resume
     isPaused.value = false
-
     if (pauseStartTime > 0) {
         totalPauseTime.value += Date.now() - pauseStartTime
         pauseStartTime = 0
     }
 
-    await startNewChunk()
+    // если нативный resume есть
+    if (mediaRecorder.state === 'paused' && mediaRecorder.resume) {
+        mediaRecorder.resume()
+    } else {
+        // fallback: стартуем новый чанк
+        await startNewChunk()
+    }
 
     clearTimer()
     recordingTimer = setInterval(() => {
