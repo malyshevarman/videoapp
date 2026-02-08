@@ -764,6 +764,7 @@ button {
     position: absolute;
     right: 10px;
     bottom: 10px;
+    background: rgba(0, 34, 57, 0.75);
 }
 
 .item__tag .tool {
@@ -887,12 +888,54 @@ p.bold {
     }
 }
 
+.sticky__head{
+    padding: 8px 0;
+    color: rgba(71, 71, 71, 1);
+    width: 100%;
+    position: relative;
+    cursor: pointer;
+    &:after{
+        content: '';
+        display: block;
+        width: 11px;
+        height: 7px;
+        position: absolute;
+        right: 0;
+        top:50%;
+        margin-top: -3.5px;
+        background: url("../images/arrowdown.svg") 100% 50% no-repeat;
+        background-size: 11px;
+        transition: 0.5s;
+    }
+
+    .sticky__head-title{
+        font-weight: bold;
+        font-size: 14px;
+        span{
+            font-weight: normal;
+        }
+    }
+
+    &.is-open{
+        &:after{
+            transition: 0.5s;
+            transform: rotate(180deg);
+        }
+    }
+}
+
 .sticky__left, .sticky__mid {
     display: grid;
     gap: 6px;
 }
 .sticky__mid{
     text-align: right;
+    padding: 0 24px 0 0;
+    border-right: 1px solid rgba(219, 219, 219, 1);
+}
+.text__job{
+    font-size: 14px;
+    color: rgba(148, 148, 148, 1);
 }
 
 .sticky__right{

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, onMounted, reactive, ref, watch} from 'vue'
+import {computed, onMounted, reactive, ref, watch ,nextTick } from 'vue'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 
@@ -22,7 +22,7 @@ const videoData = ref(null)
 const videoUrl = ref(null)
 const isRejectOpen = ref(false)
 const isDeferredOpen = ref(false)
-
+const previewVideo = ref<HTMLVideoElement | null>(null)
 
 onMounted(() => {
     loadVideo()
@@ -92,7 +92,7 @@ const statusMeta = computed(() => {
 
         default:
             return {
-                title: '—',
+                title: 'Дополнительные продажи',
             }
     }
 })
@@ -105,8 +105,29 @@ function getStatusText(customerApproved) {
 }
 function selectItem(item) {
     activeItem.value = item
+    nextTick(() => {
+        seekTo(item.time) // time в секундах
+    })
 }
+function seekTo(seconds: unknown) {
+    const video = previewVideo.value
+    if (!video) return
 
+    const t = Math.max(0, Number(seconds ?? 0))
+
+    // если метаданные ещё не загрузились — дождёмся
+    if (video.readyState < 1) {
+        const handler = () => {
+            video.currentTime = t
+            video.removeEventListener('loadedmetadata', handler)
+        }
+        video.addEventListener('loadedmetadata', handler, { once: true })
+        return
+    }
+
+    // если уже всё ок
+    video.currentTime = Math.min(t, Number.isFinite(video.duration) ? video.duration : t)
+}
 type DetailRow = {
     lineId: string
     positionType: string
@@ -163,10 +184,18 @@ function money(v: unknown) {
     return n.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₽'
 }
 
-function formatTime(t: unknown) {
-    // пока как у тебя: "7 ч."
-    const n = Number(t ?? 0)
-    return `${n} ч.`
+
+const activeItemTimeHours = computed(() => {
+    if (!activeItem.value) return 0
+
+    return (activeItem.value.details ?? [])
+        .filter((r: any) => String(r.positionMeasure).toUpperCase() === 'ЧАС')
+        .reduce((sum: number, r: any) => {
+            return sum + Number(r.positionQuantity ?? 0)
+        }, 0)
+})
+function formatTime(hours: number) {
+    return `${hours} ч.`
 }
 type CustomerApproved = 'approved' | 'rejected' | 'deferred' | 'callback'
 
@@ -311,9 +340,7 @@ const allHaveStatus = computed(() =>
         ['approved', 'rejected', 'deferred', 'callback'].includes(i.customerApproved)
     )
 )
-watch(activeItem, () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-})
+
 
 const stickyOpen = ref(false)
 
@@ -328,6 +355,19 @@ const approvedItemsList = computed(() => {
             )
             return { id: i.id, title: i.title, sum }
         })
+})
+
+const approvedRepairTimeHours = computed(() => {
+    return localItems.value
+        .filter(i => i.customerApproved === 'approved')
+        .reduce((sum, item: any) => {
+            const rows = item.details ?? []
+            const hours = rows
+                .filter((r: any) => String(r.positionMeasure ?? '').toUpperCase() === 'ЧАС')
+                .reduce((s: number, r: any) => s + Number(r.positionQuantity ?? 0), 0)
+
+            return sum + hours
+        }, 0)
 })
 </script>
 <template>
@@ -523,7 +563,9 @@ const approvedItemsList = computed(() => {
 }">
                                             <span class="dot"></span>   {{getStatusText(activeItem.customerApproved) }}
                                         </div>
-                                        <div class="work__time"> ~ {{ formatTime(activeItem.time) }}</div>
+                                        <div class="work__time" v-if="activeItemTimeHours > 0">
+                                            ~ {{ formatTime(activeItemTimeHours) }}
+                                        </div>
                                     </div>
                                 </div>
 
@@ -736,9 +778,11 @@ const approvedItemsList = computed(() => {
             <div class="container">
 
                 <div class="" v-if="approvedStats.count">
-                    <div class="sticky__head" @click="stickyOpen = !stickyOpen">
+                    <div class="sticky__head"
+                         :class="{ 'is-open': stickyOpen }"
+                         @click="stickyOpen = !stickyOpen">
                         <div class="sticky__head-title">
-                            Детали заказа ({{ approvedItemsList.length }})
+                            Детали заказа <span>({{ approvedItemsList.length }})</span>
                         </div>
                     </div>
 
@@ -775,12 +819,17 @@ const approvedItemsList = computed(() => {
                     </div>
                     <div class="col_right">
 
+                        <div class="text__job" v-if="approvedStats.count">
+                            Ориентировочное время ремонта {{approvedRepairTimeHours}} ч.<br/>
+                            после согласования ремонтных работ
+                        </div>
+
                         <div class="mrg"></div>
                         <div class="sticky__right">
                             <button
                                 class="btn btn--ghost"
                                 type="button"
-                                :disabled="isFirst"
+                                v-if="!isFirst"
                                 @click="goPrev"
                             >
                                 Назад
