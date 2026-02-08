@@ -1,0 +1,149 @@
+<script setup lang="ts">
+import type { PropType } from 'vue'
+
+type ApprovedStats = {
+    count: number
+    sumIncVat: number
+}
+
+type ApprovedItem = {
+    id: number | string
+    title: string
+    sum: number
+}
+
+defineProps({
+    stickyOpen: {
+        type: Boolean,
+        required: true,
+    },
+    approvedStats: {
+        type: Object as PropType<ApprovedStats>,
+        required: true,
+    },
+    approvedItemsList: {
+        type: Array as PropType<ApprovedItem[]>,
+        required: true,
+    },
+    approvedRepairTimeHours: {
+        type: Number,
+        required: true,
+    },
+    itemsLength: {
+        type: Number,
+        required: true,
+    },
+    isFirst: {
+        type: Boolean,
+        required: true,
+    },
+    isLast: {
+        type: Boolean,
+        required: true,
+    },
+    allHaveStatus: {
+        type: Boolean,
+        required: true,
+    },
+    money: {
+        type: Function as PropType<(value: unknown) => string>,
+        required: true,
+    },
+    goPrev: {
+        type: Function as PropType<() => void>,
+        required: true,
+    },
+    goNext: {
+        type: Function as PropType<() => void>,
+        required: true,
+    },
+    submitAll: {
+        type: Function as PropType<() => void>,
+        required: true,
+    },
+})
+
+const emit = defineEmits(['toggle'])
+</script>
+
+<template>
+    <div class="sticky">
+        <div class="container">
+            <div class="" v-if="approvedStats.count">
+                <div class="sticky__head"
+                     :class="{ 'is-open': stickyOpen }"
+                     @click="emit('toggle')">
+                    <div class="sticky__head-title">
+                        Детали заказа <span>({{ approvedItemsList.length }})</span>
+                    </div>
+                </div>
+
+                <Transition name="sticky-acc">
+                    <div v-show="stickyOpen" class="sticky__body">
+                        <div class="sticky__list" v-if="approvedItemsList.length">
+                            <div class="sticky__list-row" v-for="w in approvedItemsList" :key="w.id">
+                                <div class="sticky__list-title">{{ w.title }}</div>
+                                <div class="sticky__list-sum">{{ money(w.sum) }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </Transition>
+            </div>
+
+            <div class="sticky__bar">
+                <div class="col_left">
+                    <div class="sticky__left">
+                        <div class="sticky__label">Согласовано работ:</div>
+                        <div class="sticky__value"><span
+                            class="sticky__value-accent">{{ approvedStats.count }}</span> из {{ itemsLength }}
+                        </div>
+                    </div>
+                    <div class="mrg"></div>
+
+                    <div class="sticky__mid">
+                        <div class="sticky__label">Итого:</div>
+                        <div class="sticky__sum">{{ approvedStats.sumIncVat }} ₽</div>
+                    </div>
+                </div>
+                <div class="col_right">
+
+                    <div class="text__job" v-if="approvedStats.count">
+                        Ориентировочное время ремонта {{ approvedRepairTimeHours }} ч.<br/>
+                        после согласования ремонтных работ
+                    </div>
+
+                    <div class="mrg"></div>
+                    <div class="sticky__right">
+                        <button
+                            class="btn btn--ghost"
+                            type="button"
+                            v-if="!isFirst"
+                            @click="goPrev"
+                        >
+                            Назад
+                        </button>
+
+                        <button
+                            v-if="!isLast"
+                            class="btn btn--next"
+                            type="button"
+                            @click="goNext"
+                        >
+                            Далее
+                        </button>
+
+                        <button
+                            v-else
+                            class="btn btn--primary"
+                            type="button"
+                            :disabled="!allHaveStatus"
+                            @click="submitAll"
+                        >
+                            Подтвердить
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
