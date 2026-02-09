@@ -193,53 +193,78 @@ class ExternalServiceController extends Controller
         $data = $request->all();
 
         // 2️⃣ Сохраняем или обновляем по order_id
-        $order = ServiceOrder::updateOrCreate(
-            [
-                // ключ поиска
-                'order_id' => data_get($data, 'referenceObject.orderId'),
-            ],
-            [
-                // ===== JSON блоки =====
-                'referenceObject'        => $data['referenceObject'],
-                'tasks'                  => $data['tasks'] ?? null,
-                'details'                => $data['details'] ?? null,
-                'processStatusRecords'   => $data['processStatusRecords'] ?? null,
+        $orderId = data_get($data, 'referenceObject.orderId');
+        $order = ServiceOrder::where('order_id', $orderId)->first();
 
-                'client'                 => $data['client'] ?? null,
-                'carDriver'              => $data['carDriver'] ?? null,
-                'carOwner'               => $data['carOwner'] ?? null,
-                'surveyObject'           => $data['surveyObject'] ?? null,
-                'requester'              => $data['requester'] ?? null,
-                'responsibleEmployee'    => $data['responsibleEmployee'] ?? null,
+        $incomingTasks = collect($data['tasks'] ?? []);
+        $incomingDetails = collect($data['details'] ?? []);
 
-                // ===== Простые поля =====
-                'siteId'                 => $data['siteId'] ?? null,
-                'locationCode'           => $data['locationCode'] ?? null,
-                'reviewCategory'         => $data['reviewCategory'] ?? null,
-                'changeTimeStamp'        => $data['changeTimeStamp'] ?? null,
+        $mergedTasks = $incomingTasks;
+        $mergedDetails = $incomingDetails;
 
-                'closed'                 => $data['closed'] ?? false,
-                'completed'              => $data['completed'] ?? false,
-                'completionTimeStamp'    => $data['completionTimeStamp'] ?? null,
-                'creationTimestamp'      => $data['creationTimestamp'] ?? null,
+        if ($order) {
+            $existingTasks = collect($order->tasks ?? []);
+            $existingDetails = collect($order->details ?? []);
 
-                'dealerCode'            => $data['dealerCode'] ?? null,
-                'hasSurveyRefs'          => $data['hasSurveyRefs'] ?? false,
-                'reviewId'               => $data['reviewId'] ?? null,
+            $mergedTasks = $existingTasks
+                ->concat($incomingTasks)
+                ->unique('taskId')
+                ->values();
 
-                'visitStartTime'         => $data['visitStartTime'] ?? null,
-                'processStatus'          => $data['processStatus'] ?? null,
-                'reviewType'             => $data['reviewType'] ?? null,
-                'systemId'               => $data['systemId'] ?? null,
+            $mergedDetails = $existingDetails
+                ->concat($incomingDetails)
+                ->unique('taskId')
+                ->values();
+        }
 
-                'reviewTemplateId'       => $data['reviewTemplateId'] ?? null,
-                'reviewName'             => $data['reviewName'] ?? null,
-                'timeSpent'              => $data['timeSpent'] ?? 0,
+        $payload = [
+            // ===== JSON блоки =====
+            'referenceObject'        => $data['referenceObject'],
+            'tasks'                  => $mergedTasks->isNotEmpty() ? $mergedTasks->toArray() : null,
+            'details'                => $mergedDetails->isNotEmpty() ? $mergedDetails->toArray() : null,
+            'processStatusRecords'   => $data['processStatusRecords'] ?? null,
 
-                'defects'                => $data['defects'] ?? null,
+            'client'                 => $data['client'] ?? null,
+            'carDriver'              => $data['carDriver'] ?? null,
+            'carOwner'               => $data['carOwner'] ?? null,
+            'surveyObject'           => $data['surveyObject'] ?? null,
+            'requester'              => $data['requester'] ?? null,
+            'responsibleEmployee'    => $data['responsibleEmployee'] ?? null,
 
-            ]
-        );
+            // ===== Простые поля =====
+            'siteId'                 => $data['siteId'] ?? null,
+            'locationCode'           => $data['locationCode'] ?? null,
+            'reviewCategory'         => $data['reviewCategory'] ?? null,
+            'changeTimeStamp'        => $data['changeTimeStamp'] ?? null,
+
+            'closed'                 => $data['closed'] ?? false,
+            'completed'              => $data['completed'] ?? false,
+            'completionTimeStamp'    => $data['completionTimeStamp'] ?? null,
+            'creationTimestamp'      => $data['creationTimestamp'] ?? null,
+
+            'dealerCode'             => $data['dealerCode'] ?? null,
+            'hasSurveyRefs'          => $data['hasSurveyRefs'] ?? false,
+            'reviewId'               => $data['reviewId'] ?? null,
+
+            'visitStartTime'         => $data['visitStartTime'] ?? null,
+            'processStatus'          => $data['processStatus'] ?? null,
+            'reviewType'             => $data['reviewType'] ?? null,
+            'systemId'               => $data['systemId'] ?? null,
+
+            'reviewTemplateId'       => $data['reviewTemplateId'] ?? null,
+            'reviewName'             => $data['reviewName'] ?? null,
+            'timeSpent'              => $data['timeSpent'] ?? 0,
+
+            'defects'                => $data['defects'] ?? null,
+        ];
+
+        if ($order) {
+            $order->fill($payload);
+            $order->save();
+        } else {
+            $payload['order_id'] = $orderId;
+            $order = ServiceOrder::create($payload);
+        }
         if ($order->wasRecentlyCreated) {
             $order->processStatusRecords = [
                 [
@@ -254,8 +279,7 @@ class ExternalServiceController extends Controller
 
         return response()->json([
             'success' => true,
-            'order_id' => $order->order_id,
-            'id' => $order->id,
+            'order' => $order,
         ]);
     }
 
