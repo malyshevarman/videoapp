@@ -259,6 +259,7 @@ class ExternalServiceController extends Controller
         ];
 
         if ($order) {
+            unset($payload['processStatusRecords'], $payload['processStatus'], $payload['defects']);
             $order->fill($payload);
             $order->save();
         } else {
