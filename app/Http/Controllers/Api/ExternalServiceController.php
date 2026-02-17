@@ -195,6 +195,7 @@ class ExternalServiceController extends Controller
         // 2️⃣ Сохраняем или обновляем по order_id
         $orderId = data_get($data, 'referenceObject.orderId');
         $order = ServiceOrder::where('order_id', $orderId)->first();
+        $customerDecisionRecorded = false;
 
         $incomingTasks = collect($data['tasks'] ?? []);
         $incomingDetails = collect($data['details'] ?? []);
@@ -203,6 +204,11 @@ class ExternalServiceController extends Controller
         $mergedDetails = $incomingDetails;
 
         if ($order) {
+            $records = is_array($order->processStatusRecords) ? $order->processStatusRecords : [];
+            $customerDecisionRecorded = collect($records)->contains(
+                fn ($r) => ($r['status'] ?? null) === 'customerDecisionRecorded'
+            );
+
             $existingTasks = collect($order->tasks ?? []);
             $existingDetails = collect($order->details ?? []);
 
@@ -211,10 +217,16 @@ class ExternalServiceController extends Controller
                 ->unique('taskId')
                 ->values();
 
-            $mergedDetails = $existingDetails
-                ->concat($incomingDetails)
-                ->unique('taskId')
-                ->values();
+            if ($customerDecisionRecorded) {
+                // После решения клиента details замораживаются.
+                $mergedDetails = $existingDetails;
+            } else {
+                // До решения клиента приоритет у свежих details из внешней системы.
+                $mergedDetails = $incomingDetails
+                    ->concat($existingDetails)
+                    ->unique(fn ($item) => (string) ($item['taskId'] ?? ''))
+                    ->values();
+            }
         }
 
         $payload = [
@@ -260,6 +272,12 @@ class ExternalServiceController extends Controller
 
         if ($order) {
             unset($payload['processStatusRecords'], $payload['processStatus'], $payload['defects']);
+
+            // После фиксации решения клиента не даем внешнему API перетирать details.
+            if ($customerDecisionRecorded) {
+                unset($payload['details']);
+            }
+
             $order->fill($payload);
             $order->save();
         } else {

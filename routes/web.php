@@ -19,6 +19,9 @@ Route::get('/video/play/{id}', [HomeController::class, 'videoplay'])
 Route::get('/services/{public_url}/show', [HomeController::class, 'showservices'])->name('services.show');
 Route::post('/services/{public_url}/update', [HomeController::class, 'updateservices'])
     ->name('services.update');
+Route::post('/services/{public_url}/sent', [HomeController::class, 'markApprovalLinkSent'])
+    ->middleware('auth')
+    ->name('services.sent');
 
 
 Route::get('video', [ExternalServiceController::class, 'show']);

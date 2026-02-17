@@ -1,6 +1,7 @@
 <script setup>
 import { reactive, ref, onMounted } from 'vue'
 import draggable from 'vuedraggable'
+import { Toaster, toast } from 'vue-sonner'
 
 const props = defineProps({
     service: Object
@@ -9,6 +10,7 @@ const props = defineProps({
 const service = reactive(props.service)
 const defects = ref([])
 const isSaved = ref(false)
+const isLinkCopied = ref(false)
 
 const videoData = ref(null)
 const videoUrl = ref(null)
@@ -128,19 +130,60 @@ const getStatusClass = (status) => {
     }
 }
 
-const openUrl = async (event) => {
-    event.preventDefault()
-
-    if (defects.value.length > 0) {
-        await saveDefects()
+const copyToClipboard = async (text) => {
+    if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text)
+        return
     }
 
-    window.open(`/services/${service.public_url}/show`, '_blank')
+    const textarea = document.createElement('textarea')
+    textarea.value = text
+    textarea.setAttribute('readonly', '')
+    textarea.style.position = 'absolute'
+    textarea.style.left = '-9999px'
+    document.body.appendChild(textarea)
+    textarea.select()
+    document.execCommand('copy')
+    document.body.removeChild(textarea)
+}
+
+const copyServiceLink = async (event) => {
+    event.preventDefault()
+
+    try {
+        if (defects.value.length > 0) {
+            await saveDefects()
+        }
+
+        await fetch(`/services/${service.public_url}/sent`, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document
+                    .querySelector('meta[name="csrf-token"]')
+                    .getAttribute('content'),
+                'Accept': 'application/json',
+            },
+        })
+
+        const link = `${window.location.origin}/services/${service.public_url}/show`
+        await copyToClipboard(link)
+
+        isLinkCopied.value = true
+        setTimeout(() => (isLinkCopied.value = false), 2000)
+        toast.success('Ссылка скопирована', {
+            description: 'Ссылка для клиента скопирована в буфер обмена',
+        })
+    } catch (e) {
+        toast.error('Не удалось скопировать ссылку', {
+            description: 'Проверьте доступ к буферу обмена и попробуйте снова',
+        })
+    }
 }
 </script>
 
 <template>
     <div class="card card-primary service-edit-card">
+        <Toaster position="top-right" />
         <div class="card-header">
             <div class="d-flex flex-wrap align-items-center justify-content-between w-100" style="gap: 10px;">
                 <h3 class="card-title mb-0">Редактирование заявки #{{ service.id }}</h3>
@@ -151,7 +194,7 @@ const openUrl = async (event) => {
         <div class="card-body service-edit-body">
             <div class="section-title-wrap mb-3">
                 <h5 class="section-title mb-1">Неисправности</h5>
-                <p class="text-muted mb-0 small">Добавляйте и сортируйте пункты в нужном порядке для финального отчёта.</p>
+                <p class="text-muted mb-0 small">Добавляйте и сортируйте пункты в нужном порядке.</p>
             </div>
 
             <div class="row">
@@ -235,8 +278,8 @@ const openUrl = async (event) => {
                                         <i class="fas fa-video mr-1"></i>Видео
                                     </a>
 
-                                    <a href="#" class="btn btn-sm btn-info" @click.prevent="openUrl" title="Открыть ссылку клиента">
-                                        <i class="fas fa-share-alt mr-1"></i>Ссылка
+                                    <a href="#" class="btn btn-sm btn-info" @click.prevent="copyServiceLink" title="Скопировать ссылку клиента">
+                                        <i class="fas fa-copy mr-1"></i>{{ isLinkCopied ? 'Скопировано' : 'Копировать ссылку' }}
                                     </a>
                                 </div>
                             </div>
@@ -316,8 +359,8 @@ const openUrl = async (event) => {
                 <a href="#" class="btn btn-info" @click.prevent="handleVideoRecord">
                     <i class="fas fa-video mr-1"></i>Видео
                 </a>
-                <a href="#" class="btn btn-info" @click.prevent="openUrl">
-                    <i class="fas fa-share-alt mr-1"></i>Ссылка
+                <a href="#" class="btn btn-info" @click.prevent="copyServiceLink">
+                    <i class="fas fa-copy mr-1"></i>{{ isLinkCopied ? 'Скопировано' : 'Копировать' }}
                 </a>
             </div>
         </div>

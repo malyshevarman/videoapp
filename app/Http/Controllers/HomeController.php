@@ -319,4 +319,32 @@ class HomeController extends Controller
 
         return response()->json($result);
     }
+
+    public function markApprovalLinkSent(string $public_url)
+    {
+        $service = ServiceOrder::where('public_url', $public_url)->firstOrFail();
+
+        $records = $service->processStatusRecords ?? [];
+        if (!is_array($records)) {
+            $records = [];
+        }
+
+        $exists = collect($records)->contains(
+            fn ($r) => ($r['status'] ?? null) === 'approvalLinkSent'
+        );
+
+        if (!$exists) {
+            $records[] = [
+                'id' => (string) Str::uuid(),
+                'status' => 'approvalLinkSent',
+                'timestamp' => now()->toISOString(),
+            ];
+
+            $service->processStatusRecords = $records;
+            $service->processStatus = 'approvalLinkSent';
+            $service->save();
+        }
+
+        return response()->json(['success' => true]);
+    }
 }

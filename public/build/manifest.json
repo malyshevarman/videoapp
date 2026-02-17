@@ -12,16 +12,16 @@
     "src": "resources/images/logo.svg"
   },
   "resources/js/app.js": {
-    "file": "assets/app-BbI_W-hN.js",
+    "file": "assets/app-BH-mNJAY.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
     "css": [
-      "assets/app-9c-OiqiN.css"
+      "assets/app-BaTOlHPz.css"
     ]
   },
   "resources/sass/app.scss": {
-    "file": "assets/app-DnfrWCje.css",
+    "file": "assets/app-C-kH0Us8.css",
     "src": "resources/sass/app.scss",
     "isEntry": true
   },
@@ -31,7 +31,7 @@
     "isEntry": true
   },
   "resources/sass/style.scss": {
-    "file": "assets/style-hNSyZDA5.css",
+    "file": "assets/style-CV5RPU8i.css",
     "src": "resources/sass/style.scss",
     "isEntry": true
   }
