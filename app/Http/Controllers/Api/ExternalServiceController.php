@@ -57,8 +57,8 @@ class ExternalServiceController extends Controller
         $service->tasks = $mergedTasks;
         $service->defects = $request->defects;
 
-        if (is_null($service->mechanic_id)) {
-            $service->mechanic_id = Auth::id();
+        if (is_null($service->user_id)) {
+            $service->user_id = Auth::id();
         }
 
         $records = $service->processStatusRecords ?? [];
@@ -278,10 +278,11 @@ class ExternalServiceController extends Controller
             $order->save();
         }
 
-        return response()->json([
-            'success' => true,
-            'order' => $order,
-        ]);
+        return response()->json(
+            collect($order->toArray())
+                ->except(['defects', 'id', 'order_id', 'public_url'])
+                ->all()
+        );
     }
 
 

@@ -8,8 +8,6 @@ const props = defineProps({
 
 const service = reactive(props.service)
 const defects = ref([])
-
-
 const isSaved = ref(false)
 
 const videoData = ref(null)
@@ -30,58 +28,31 @@ function seekTo(seconds) {
     const maxTime = Math.floor(previewVideo.value.duration || 0)
     previewVideo.value.currentTime = Math.min(Math.max(seconds, 0), maxTime)
 }
+
 onMounted(() => {
     loadVideo()
     if (service.defects) {
         if (Array.isArray(service.defects)) {
-            defects.value = [...service.defects];
+            defects.value = [...service.defects]
         } else {
             try {
-                const parsed = JSON.parse(service.defects);
-                defects.value = Array.isArray(parsed) ? parsed : [];
+                const parsed = JSON.parse(service.defects)
+                defects.value = Array.isArray(parsed) ? parsed : []
             } catch (e) {
-                defects.value = [];
-                console.error('Failed to parse defects JSON:', e);
+                defects.value = []
+                console.error('Failed to parse defects JSON:', e)
             }
         }
     } else {
-        defects.value = [];
+        defects.value = []
     }
-
 })
-
-const generatePreview = async (item) => {
-    if (item.preview) return
-
-    const video = previewVideo.value
-    const canvas = previewCanvas.value
-    const ctx = canvas.getContext('2d')
-
-    video.currentTime = item.time
-
-    await new Promise(resolve => {
-        video.onseeked = resolve
-    })
-
-    const targetWidth = 200
-    const aspectRatio = video.videoHeight / video.videoWidth
-    const targetHeight = Math.round(targetWidth * aspectRatio)
-
-    canvas.width = targetWidth
-    canvas.height = targetHeight
-
-    ctx.drawImage(video, 0, 0, targetWidth, targetHeight)
-    item.preview = canvas.toDataURL('image/jpeg')
-}
-
 
 const newDefect = reactive({
-    time: null, // время будет добавляться при записи
+    time: null,
     title: '',
-    status: 'green' // статус по умолчанию
+    status: 'green'
 })
-
-
 
 const loadVideo = async () => {
     const res = await fetch(`/video?service_order_id=${service.id}`)
@@ -92,7 +63,6 @@ const loadVideo = async () => {
     videoUrl.value = data.url
 }
 
-// Добавление неисправности
 const addDefect = async () => {
     if (!newDefect.title) return
 
@@ -100,7 +70,7 @@ const addDefect = async () => {
     const defectsLength = defects.value.length || 0
 
     const item = {
-        id: tasksLength + defectsLength + 1, // начинается с длины tasks
+        id: tasksLength + defectsLength + 1,
         time: 0,
         title: newDefect.title,
         status: newDefect.status || 'green',
@@ -108,19 +78,14 @@ const addDefect = async () => {
     }
 
     defects.value.push(item)
-
-    // сбрасываем форму
     newDefect.title = ''
     newDefect.status = 'green'
 }
 
-
-// Удаление неисправности
 const removeDefect = (index) => {
     defects.value.splice(index, 1)
 }
 
-// Сохранение неисправностей
 const saveDefects = async () => {
     await fetch('/video/defects', {
         method: 'POST',
@@ -138,22 +103,19 @@ const saveDefects = async () => {
     })
 
     isSaved.value = true
-    setTimeout(() => isSaved.value = false, 2000)
+    setTimeout(() => (isSaved.value = false), 2000)
 }
 
-// Иконки для статусов
 const getStatusIcon = (status) => {
     switch (status) {
-        case 'green': return '✓'
-        case 'yellow': return '●'
-        case 'red': return '✕'
+        case 'green': return 'OK'
+        case 'yellow': return '!'
+        case 'red': return 'X'
         default: return '?'
     }
 }
 
 const handleVideoRecord = async () => {
-
-    // После сохранения открываем страницу записи
     window.location.href = `/admin/services/${service.id}/video`
 }
 
@@ -167,7 +129,7 @@ const getStatusClass = (status) => {
 }
 
 const openUrl = async (event) => {
-    event.preventDefault() // отменяем стандартное поведение ссылки
+    event.preventDefault()
 
     if (defects.value.length > 0) {
         await saveDefects()
@@ -178,30 +140,28 @@ const openUrl = async (event) => {
 </script>
 
 <template>
-    <div class="card card-primary">
+    <div class="card card-primary service-edit-card">
         <div class="card-header">
-            <h3 class="card-title">
-                Редактирование заявки #{{ service.id }}
-            </h3>
+            <div class="d-flex flex-wrap align-items-center justify-content-between w-100" style="gap: 10px;">
+                <h3 class="card-title mb-0">Редактирование заявки #{{ service.id }}</h3>
+                <span class="badge badge-light border px-3 py-2">External ID: {{ service.order_id || '-' }}</span>
+            </div>
         </div>
 
-        <div class="card-body">
-            <div class="form-group">
-                <label>External ID</label>
-                <input type="text" class="form-control" readonly v-model="service.order_id">
+        <div class="card-body service-edit-body">
+            <div class="section-title-wrap mb-3">
+                <h5 class="section-title mb-1">Неисправности</h5>
+                <p class="text-muted mb-0 small">Добавляйте и сортируйте пункты в нужном порядке для финального отчёта.</p>
             </div>
 
-
-            <h5>Неисправности</h5>
-
             <div class="row">
-                <!-- Левая колонка - список добавленных неисправностей -->
-                <div class="col-md-6">
+                <div class="col-12 col-lg-6 order-2 order-lg-1">
                     <div class="card card-outline card-success">
                         <div class="card-header">
                             <h4 class="card-title">Добавленные неисправности</h4>
                             <span class="badge badge-primary ml-2">{{ defects.length }}</span>
                         </div>
+
                         <div class="card-body p-0">
                             <div v-if="defects.length === 0" class="text-center p-4 text-muted">
                                 Неисправности не добавлены
@@ -215,40 +175,32 @@ const openUrl = async (event) => {
                                 handle=".handle"
                             >
                                 <template #item="{ element, index }">
-                                    <div class="list-group-item defect-item d-flex align-items-center justify-content-between">
+                                    <div class="list-group-item defect-item">
+                                        <div class="defect-meta">
+                                            <div class="defect-main">
+                                                <span class="handle" title="Перетащить">
+                                                    <i class="fas fa-ellipsis-v"></i>
+                                                    <i class="fas fa-ellipsis-v"></i>
+                                                </span>
 
-                                        <div class="defect-meta d-flex align-items-center">
+                                                <span class="status-icon" :class="getStatusClass(element.status)">
+                                                    {{ getStatusIcon(element.status) }}
+                                                </span>
 
-                                            <!-- 🔥 Хэндл для перетаскивания -->
-                                            <span class="handle mr-2">
-                    <i class="fas fa-ellipsis-v"></i>
-                    <i class="fas fa-ellipsis-v"></i>
-                </span>
+                                                <span class="defect-title">{{ element.title }}</span>
+                                            </div>
 
-                                            <!-- Иконка статуса -->
-                                            <span class="status-icon mr-2" :class="getStatusClass(element.status)">
-                    {{ getStatusIcon(element.status) }}
-                </span>
-
-                                            <!-- Время -->
-                                            <span
-                                                class="mr-2 text-nowrap timeel"
-                                                v-if="videoUrl"
-                                                @click="seekTo(element.time)"
-                                            >
-                    <input
-                        class="form-control"
-                        v-model="element.time"
-                        @input="clampTime(element)"
-                        type="number"
-                    >
-                    сек —
-                </span>
-
-                                            <!-- Название -->
-                                            <span class="defect-title">
-                    {{ element.title }}
-                </span>
+                                            <div class="defect-time" v-if="videoUrl">
+                                                <label class="mb-1 text-muted small">Время (сек)</label>
+                                                <div class="timeel" @click="seekTo(element.time)">
+                                                    <input
+                                                        class="form-control form-control-sm"
+                                                        v-model="element.time"
+                                                        @input="clampTime(element)"
+                                                        type="number"
+                                                    >
+                                                </div>
+                                            </div>
                                         </div>
 
                                         <div class="actions defect-actions">
@@ -257,63 +209,53 @@ const openUrl = async (event) => {
                                                 @click="removeDefect(index)"
                                                 title="Удалить"
                                             >
-                                                ✕
+                                                <i class="fas fa-trash-alt"></i>
                                             </button>
                                         </div>
                                     </div>
                                 </template>
                             </draggable>
-
-
                         </div>
+
                         <div class="card-footer" v-if="defects.length > 0">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
+                            <div class="d-flex justify-content-between align-items-center flex-wrap" style="gap: 8px;">
+                                <div class="actions-inline">
                                     <button
-                                        class="btn"
+                                        class="btn btn-sm"
                                         :class="isSaved ? 'btn-success' : 'btn-primary'"
                                         :disabled="isSaved"
                                         @click="saveDefects"
                                     >
-                                        <span v-if="!isSaved">Сохранить неисправности</span>
-                                        <span v-else>Сохранено ✓</span>
+                                        <i class="fas fa-save mr-1"></i>
+                                        <span v-if="!isSaved">Сохранить</span>
+                                        <span v-else>Сохранено</span>
                                     </button>
 
-                                    <a
-                                        href="#"
-                                        class="btn btn-info ml-2"
-                                        @click.prevent="handleVideoRecord"
-                                    ><i class="fas fa-video mr-1"></i></a>
-
-
-                                    <a href="#"
-                                       @click.prevent="openUrl"
-                                       class="btn btn-info ml-2 mr-1"
-                                       title="Поделиться">
-                                        <i class="fas fa-share-alt"></i>
+                                    <a href="#" class="btn btn-sm btn-info" @click.prevent="handleVideoRecord">
+                                        <i class="fas fa-video mr-1"></i>Видео
                                     </a>
 
-
+                                    <a href="#" class="btn btn-sm btn-info" @click.prevent="openUrl" title="Открыть ссылку клиента">
+                                        <i class="fas fa-share-alt mr-1"></i>Ссылка
+                                    </a>
                                 </div>
-
-
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Правая колонка - форма добавления -->
-                <div class="col-md-6">
+                <div class="col-12 col-lg-6 order-1 order-lg-2">
                     <div class="card card-outline card-info">
                         <div class="card-header">
                             <h4 class="card-title">Добавление неисправности</h4>
                         </div>
+
                         <div class="card-body">
                             <div class="form-group">
                                 <label>Название неисправности</label>
                                 <textarea
-                                    type="text"
                                     class="form-control"
+                                    rows="4"
                                     placeholder="Введите название неисправности"
                                     v-model="newDefect.title"
                                     @keyup.enter="addDefect"
@@ -323,33 +265,28 @@ const openUrl = async (event) => {
                             <div class="form-group">
                                 <label>Статус</label>
                                 <div class="d-flex align-items-center status-row">
-                                    <div class="btn-group btn-group-toggle mr-3 status-group" data-toggle="buttons">
+                                    <div class="btn-group btn-group-toggle status-group" data-toggle="buttons">
                                         <label class="btn btn-outline-success" :class="{ active: newDefect.status === 'green' }">
-                                            <input type="radio" v-model="newDefect.status" value="green"> ✓
+                                            <input type="radio" v-model="newDefect.status" value="green"> <i class="fas fa-check mr-1"></i>Норма
                                         </label>
                                         <label class="btn btn-outline-warning" :class="{ active: newDefect.status === 'yellow' }">
-                                            <input type="radio" v-model="newDefect.status" value="yellow"> ●
+                                            <input type="radio" v-model="newDefect.status" value="yellow"> <i class="fas fa-exclamation mr-1"></i>Внимание
                                         </label>
                                         <label class="btn btn-outline-danger" :class="{ active: newDefect.status === 'red' }">
-                                            <input type="radio" v-model="newDefect.status" value="red"> ✕
+                                            <input type="radio" v-model="newDefect.status" value="red"> <i class="fas fa-times mr-1"></i>Проблема
                                         </label>
                                     </div>
+
                                     <div class="status-example status-legend">
-                                        <span class="status-icon status-green">✓</span> - Норма
-                                        <span class="status-icon status-yellow ml-2">●</span> - Внимание
-                                        <span class="status-icon status-red ml-2">✕</span> - Проблема
+                                        <span class="status-icon status-green">OK</span> - Норма
+                                        <span class="status-icon status-yellow ml-2">!</span> - Внимание
+                                        <span class="status-icon status-red ml-2">X</span> - Проблема
                                     </div>
                                 </div>
                             </div>
 
-
-
-                            <button
-                                class="btn btn-primary btn-block"
-                                @click="addDefect"
-                                :disabled="!newDefect.title"
-                            >
-                                Добавить неисправность
+                            <button class="btn btn-primary btn-block" @click="addDefect" :disabled="!newDefect.title">
+                                <i class="fas fa-plus mr-1"></i>Добавить неисправность
                             </button>
                         </div>
                     </div>
@@ -357,21 +294,32 @@ const openUrl = async (event) => {
             </div>
 
             <template v-if="videoUrl">
-                <!-- основное видео -->
                 <video
                     ref="previewVideo"
                     :src="videoUrl"
                     controls
                     preload="auto"
-                    class="w-100 mt-3 border rounded"
+                    class="w-100 mt-3 border rounded service-video-preview"
                     style="max-height:300px"
                 ></video>
 
-                <!-- служебный canvas -->
                 <canvas ref="previewCanvas" style="display:none"></canvas>
-
                 <hr>
             </template>
+
+            <div class="mobile-actions" v-if="defects.length > 0">
+                <button class="btn" :class="isSaved ? 'btn-success' : 'btn-primary'" :disabled="isSaved" @click="saveDefects">
+                    <i class="fas fa-save mr-1"></i>
+                    <span v-if="!isSaved">Сохранить</span>
+                    <span v-else>Сохранено</span>
+                </button>
+                <a href="#" class="btn btn-info" @click.prevent="handleVideoRecord">
+                    <i class="fas fa-video mr-1"></i>Видео
+                </a>
+                <a href="#" class="btn btn-info" @click.prevent="openUrl">
+                    <i class="fas fa-share-alt mr-1"></i>Ссылка
+                </a>
+            </div>
         </div>
     </div>
 </template>
@@ -382,7 +330,8 @@ const openUrl = async (event) => {
     color: #888;
     user-select: none;
     font-size: 20px;
-    .fas{
+
+    .fas {
         margin: 0 0.2em 0 0;
     }
 }
@@ -393,6 +342,7 @@ const openUrl = async (event) => {
 
 .ghost-item {
     opacity: 0.5;
+    background-color: #e9ecef;
 }
 
 .list-group-item {
@@ -401,22 +351,6 @@ const openUrl = async (event) => {
 
 .list-group-item:hover {
     background-color: #f8f9fa;
-}
-
-.ghost-item {
-    opacity: 0.5;
-    background-color: #e9ecef;
-}
-
-.time-badge {
-    background-color: #e9ecef;
-    padding: 2px 10px;
-    border-radius: 12px;
-    font-weight: 600;
-    font-size: 0.8rem;
-    min-width: 100px;
-    text-align: center;
-    white-space: nowrap;
 }
 
 .defect-title {
@@ -434,6 +368,7 @@ const openUrl = async (event) => {
     border-radius: 50%;
     font-weight: bold;
     flex-shrink: 0;
+    font-size: 11px;
 }
 
 .status-green {
@@ -452,8 +387,8 @@ const openUrl = async (event) => {
 }
 
 .btn-group-toggle .btn {
-    padding: 0.25rem 0.75rem;
-    font-size: 1.2rem;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.9rem;
 }
 
 .btn-group-toggle .btn.active {
@@ -481,7 +416,7 @@ const openUrl = async (event) => {
 }
 
 .actions {
-    opacity: 0.7;
+    opacity: 0.75;
     transition: opacity 0.2s;
     flex-shrink: 0;
 }
@@ -490,30 +425,41 @@ const openUrl = async (event) => {
     opacity: 1;
 }
 
-.alert-info {
-    font-size: 0.9rem;
-    padding: 8px 12px;
-}
-
 .form-group {
     margin-bottom: 1.2rem;
 }
-.timeel{
-    display:flex; align-items: center; cursor: pointer; color: blue;
-    .form-control{
-        width: 80px;
-        margin: 0 10px 0 0;
+
+.timeel {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+
+    .form-control {
+        width: 110px;
     }
 }
 
 .defect-item {
     gap: 0.5rem;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
 }
 
 .defect-meta {
-    gap: 0.5rem;
     flex: 1 1 auto;
     min-width: 0;
+}
+
+.defect-main {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+}
+
+.defect-time {
+    margin-top: 0.45rem;
 }
 
 .defect-actions {
@@ -527,10 +473,95 @@ const openUrl = async (event) => {
 
 .status-group {
     flex-wrap: wrap;
+    gap: 0.35rem;
 }
 
 .status-legend {
     line-height: 1.4;
 }
 
+.service-edit-card {
+    overflow: visible;
+}
+
+.service-edit-body {
+    padding-bottom: 84px;
+}
+
+.actions-inline {
+    display: flex;
+    gap: 0.45rem;
+}
+
+.section-title {
+    font-weight: 700;
+}
+
+.service-video-preview {
+    background: #111;
+}
+
+.mobile-actions {
+    display: none;
+}
+
+@media (max-width: 991.98px) {
+    .status-row {
+        align-items: flex-start !important;
+    }
+
+    .status-legend {
+        width: 100%;
+        margin-top: 0.25rem;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .service-edit-body {
+        padding-bottom: 98px;
+    }
+
+    .defect-item {
+        flex-direction: column;
+        gap: 0.65rem;
+    }
+
+    .defect-actions {
+        width: 100%;
+    }
+
+    .defect-actions .btn {
+        width: 100%;
+    }
+
+    .timeel .form-control {
+        width: 100%;
+        margin-right: 0;
+    }
+
+    .actions-inline {
+        display: none;
+    }
+
+    .mobile-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 0.5rem;
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 1035;
+        padding: 0.55rem 0.75rem calc(0.55rem + env(safe-area-inset-bottom));
+        background: rgba(255, 255, 255, 0.96);
+        border-top: 1px solid #dfe3e8;
+        backdrop-filter: blur(4px);
+    }
+
+    .mobile-actions .btn {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.35rem;
+        white-space: nowrap;
+    }
+}
 </style>

@@ -55,7 +55,7 @@ class ServiceOrder extends Model implements HasMedia
         'responsibleEmployee',
         // локальные дефекты
         'defects',
-        'mechanic_id'
+        'user_id'
     ];
 
     protected $casts = [
@@ -118,8 +118,13 @@ class ServiceOrder extends Model implements HasMedia
             ->useDisk('public'); // или другой диск, если нужно
     }
 
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
     public function mechanic()
     {
-        return $this->belongsTo(User::class, 'mechanic_id');
+        return $this->user();
     }
 }

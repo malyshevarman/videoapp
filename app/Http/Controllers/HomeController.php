@@ -72,7 +72,12 @@ class HomeController extends Controller
         $images = $service->getMedia('frames');
 
         // 3) собираем items
-        $items = $defects->map(function ($defect) use ($detailsByTaskId, $images) {
+        $items = $defects
+            ->filter(function ($defect) use ($detailsByTaskId) {
+                $id = (string) ($defect['id'] ?? '');
+                return $id !== '' && $detailsByTaskId->has($id);
+            })
+            ->map(function ($defect) use ($detailsByTaskId, $images) {
             $id = (string) ($defect['id'] ?? '');
             $detail = $detailsByTaskId->get($id);
 
@@ -122,7 +127,7 @@ class HomeController extends Controller
 
                 'details' => $variant['details'] ?? [],
             ];
-        })->values()->toArray();
+            })->values()->toArray();
 
         return view('services.index', [
             'service' => $service,
@@ -150,80 +155,82 @@ class HomeController extends Controller
 
     public function updateservices(Request $request, string $public_url)
     {
-        $service = ServiceOrder::where('public_url', $public_url)->firstOrFail();
+        $validated = $request->validate([
+            'items' => 'required|array|min:1',
+            'items.*.id' => 'required',
+            'items.*.variantId' => 'nullable',
+            'items.*.customerApproved' => 'required|string|in:approved,deferred,rejected,cancelled,canceled,callback',
+            'items.*.deferredTaskDate' => 'nullable|date',
+        ]);
 
-        $items = collect($request->input('items', []))
-            ->filter(fn($i) => isset($i['id'])) // taskId
-            ->keyBy(fn($i) => (string)$i['id']);
+        $result = DB::transaction(function () use ($public_url, $validated) {
+            $service = ServiceOrder::where('public_url', $public_url)
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        $details = $service->details ?? [];
-        if (!is_array($details)) $details = [];
+            $items = collect($validated['items'])
+                ->filter(fn ($i) => isset($i['id']))
+                ->keyBy(fn ($i) => (string) $i['id']);
 
-        $zeroVariantMoney = function (&$variant) {
-            // обнуляем approvedPrice*
-            $variant['approvedPriceExVat']  = 0;
-            $variant['approvedPriceIncVat'] = 0;
+            $details = is_array($service->details) ? $service->details : [];
 
-            // обнуляем позиции в details (если есть)
-            if (!isset($variant['details']) || !is_array($variant['details'])) return;
+            $zeroVariantMoney = function (&$variant) {
+                $variant['approvedPriceExVat'] = 0;
+                $variant['approvedPriceIncVat'] = 0;
 
-            foreach ($variant['details'] as &$d) {
-                if (is_array($d)) {
-                    $d['positionAmountExVat']  = 0;
+                if (!isset($variant['details']) || !is_array($variant['details'])) {
+                    return;
+                }
+
+                foreach ($variant['details'] as &$d) {
+                    if (!is_array($d)) {
+                        continue;
+                    }
+
+                    $d['positionAmountExVat'] = 0;
                     $d['positionAmountIncVat'] = 0;
                 }
-            }
-            unset($d);
-        };
+                unset($d);
+            };
 
-        DB::transaction(function () use (&$details, $items, $zeroVariantMoney) {
             foreach ($details as &$detail) {
-                $taskId = (string)($detail['taskId'] ?? '');
-                if ($taskId === '' || !$items->has($taskId)) continue;
-
-                $incoming = $items->get($taskId);
-
-                // проверяем путь до variants
-                if (
-                    !isset($detail['answers'][0]['packages'][0]['variants']) ||
-                    !is_array($detail['answers'][0]['packages'][0]['variants'])
-                ) {
+                $taskId = (string) ($detail['taskId'] ?? '');
+                if ($taskId === '' || !$items->has($taskId)) {
                     continue;
                 }
 
-                $variants =& $detail['answers'][0]['packages'][0]['variants'];
+                $incoming = $items->get($taskId);
+                $variants = data_get($detail, 'answers.0.packages.0.variants', []);
+                if (!is_array($variants) || empty($variants)) {
+                    continue;
+                }
 
                 $targetVariantId = $incoming['variantId'] ?? null;
-
-                // найдём индекс целевого варианта
                 $targetIndex = null;
+
                 foreach ($variants as $idx => $v) {
-                    if ($targetVariantId !== null && (string)($v['id'] ?? '') === (string)$targetVariantId) {
+                    if ($targetVariantId !== null && (string) ($v['id'] ?? '') === (string) $targetVariantId) {
                         $targetIndex = $idx;
                         break;
                     }
                 }
-                // если variantId не передали — обновим первый (как в showservices())
-                if ($targetIndex === null) $targetIndex = 0;
 
-                $status = $incoming['customerApproved'] ?? null; // expected: approved | deferred | cancelled/rejected
+                if ($targetIndex === null) {
+                    $targetIndex = 0;
+                }
 
-                // 1) Проставляем customerApproved на целевом варианте (если пришёл)
+                $status = $incoming['customerApproved'] ?? null;
                 if ($status !== null) {
                     $variants[$targetIndex]['customerApproved'] = $status;
                 }
 
-                // 2) Логика по статусам
                 if ($status === 'approved') {
-                    // approved: убираем deferredTaskDate
                     $variants[$targetIndex]['deferredTaskDate'] = null;
-                    // цены и позиции НЕ трогаем
                 }
 
                 if ($status === 'deferred') {
                     $date = $incoming['deferredTaskDate'] ?? null;
 
-                    // у всех остальных вариантов этого taskId deferredTaskDate = null
                     foreach ($variants as $i => &$v) {
                         if ($i !== $targetIndex) {
                             $v['deferredTaskDate'] = null;
@@ -231,85 +238,85 @@ class HomeController extends Controller
                     }
                     unset($v);
 
-                    // целевому ставим дату
                     $variants[$targetIndex]['deferredTaskDate'] = $date;
-
-                    // и обнуляем деньги/позиции у целевого варианта
                     $zeroVariantMoney($variants[$targetIndex]);
                 }
 
                 if ($status === 'cancelled' || $status === 'canceled' || $status === 'rejected') {
-                    // отменено: deferredTaskDate = null
                     $variants[$targetIndex]['deferredTaskDate'] = null;
-
-                    // обнуляем деньги/позиции
                     $zeroVariantMoney($variants[$targetIndex]);
                 }
+
+                data_set($detail, 'answers.0.packages.0.variants', $variants);
             }
             unset($detail);
-        });
 
-        $records = $service->processStatusRecords ?? [];
-        if (!is_array($records)) {
-            $records = [];
-        }
-        $exists = collect($records)->contains(fn ($r) =>
-            ($r['status'] ?? null) === 'customerDecisionRecorded'
-        );
+            $sumEx = 0;
+            $sumInc = 0;
 
-        if (!$exists) {
-            $records[] = [
-                'id' => (string) Str::uuid(),
-                'status' => 'customerDecisionRecorded',
-                'timestamp' => now()->toISOString(),
-            ];
+            foreach ($details as $detail) {
+                $variants = data_get($detail, 'answers.0.packages.0.variants', []);
+                if (!is_array($variants)) {
+                    continue;
+                }
 
-            $service->processStatusRecords = $records;
-            $service->processStatus = 'customerDecisionRecorded';
-            $service->save();
-        }
+                foreach ($variants as $variant) {
+                    if (($variant['customerApproved'] ?? null) !== 'approved') {
+                        continue;
+                    }
 
-        $service->details = $details;
+                    $vDetails = $variant['details'] ?? [];
+                    if (!is_array($vDetails)) {
+                        continue;
+                    }
 
-        $sumEx = 0;
-        $sumInc = 0;
+                    foreach ($vDetails as $pos) {
+                        if (!is_array($pos)) {
+                            continue;
+                        }
 
-        foreach ($details as $detail) {
-            $variants = $detail['answers'][0]['packages'][0]['variants'] ?? [];
-            if (!is_array($variants)) continue;
-
-            foreach ($variants as $variant) {
-                // считаем только согласованные
-                if (($variant['customerApproved'] ?? null) !== 'approved') continue;
-
-                $vDetails = $variant['details'] ?? [];
-                if (!is_array($vDetails)) continue;
-
-                foreach ($vDetails as $pos) {
-                    if (!is_array($pos)) continue;
-
-                    $sumEx  += (float) ($pos['positionAmountExVat']  ?? 0);
-                    $sumInc += (float) ($pos['positionAmountIncVat'] ?? 0);
+                        $sumEx += (float) ($pos['positionAmountExVat'] ?? 0);
+                        $sumInc += (float) ($pos['positionAmountIncVat'] ?? 0);
+                    }
                 }
             }
-        }
 
-// округлим до 2 знаков (чтобы не было 0.30000000004)
-        $sumEx  = round($sumEx, 2);
-        $sumInc = round($sumInc, 2);
+            $sumEx = round($sumEx, 2);
+            $sumInc = round($sumInc, 2);
 
-// referenceObject тоже может быть null/строкой — нормализуем
-        $ref = $service->referenceObject ?? [];
-        if (!is_array($ref)) $ref = [];
+            $records = is_array($service->processStatusRecords) ? $service->processStatusRecords : [];
+            $exists = collect($records)->contains(fn ($r) => ($r['status'] ?? null) === 'customerDecisionRecorded');
+            if (!$exists) {
+                $records[] = [
+                    'id' => (string) Str::uuid(),
+                    'status' => 'customerDecisionRecorded',
+                    'timestamp' => now()->toISOString(),
+                ];
+            }
 
-        $ref['orderAmountExVat']  = $sumEx;
-        $ref['orderAmountIncVat'] = $sumInc;
+            $referenceObject = is_array($service->referenceObject) ? $service->referenceObject : [];
+            $referenceObject['orderAmountExVat'] = $sumEx;
+            $referenceObject['orderAmountIncVat'] = $sumInc;
 
-        $service->referenceObject = $ref;
+            $finalStatuses = ['approved', 'deferred', 'rejected', 'cancelled', 'canceled'];
+            $completed = $items->isNotEmpty()
+                && $items->every(fn ($item) => in_array(($item['customerApproved'] ?? null), $finalStatuses, true));
 
-        $service->completed=true;
-        $service->save();
+            $service->details = $details;
+            $service->processStatusRecords = $records;
+            $service->processStatus = 'customerDecisionRecorded';
+            $service->referenceObject = $referenceObject;
+            $service->completed = $completed;
+            $service->save();
 
-        return response()->json(['success' => true]);
+            return [
+                'success' => true,
+                'completed' => $completed,
+                'orderAmountExVat' => $sumEx,
+                'orderAmountIncVat' => $sumInc,
+            ];
+        });
+
+        return response()->json($result);
     }
 }

@@ -73,7 +73,7 @@ defineProps({
                     <div class="kv">
                         <div class="kv__row">
                             <div class="kv__k">Дилерский центр:</div>
-                            <div class="kv__v">BMW БорисХоф Север</div>
+                            <div class="kv__v"></div>
                         </div>
                         <div class="kv__row">
                             <div class="kv__k">Мастер консультант:</div>
@@ -83,7 +83,7 @@ defineProps({
                         </div>
                         <div class="kv__row">
                             <div class="kv__k">Механик:</div>
-                            <div class="kv__v"> {{ service?.mechanic?.name }}</div>
+                            <div class="kv__v"> {{ service?.requester?.specialistLastName }} {{ service?.requester?.specialistFirstName }}</div>
                         </div>
                     </div>
 

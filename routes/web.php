@@ -7,8 +7,12 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\Api\ExternalServiceController;
 
-Auth::routes();
-Route::get('/', [HomeController::class, 'index'])->name('home');
+Auth::routes(['register' => false]);
+Route::get('/', function () {
+    return auth()->check()
+        ? redirect()->route('admin.dashboard')
+        : redirect()->route('login');
+})->name('home');
 Route::get('/video/play/{id}', [HomeController::class, 'videoplay'])
     ->name('videos.play');
 

@@ -7,7 +7,7 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('service_orders', function (Blueprint $table) {
-            $table->foreignId('mechanic_id')
+            $table->foreignId('user_id')
                 ->nullable();
         });
     }
@@ -15,7 +15,7 @@ return new class extends Migration {
     public function down(): void
     {
         Schema::table('service_orders', function (Blueprint $table) {
-            $table->dropColumn('mechanic_id');
+            $table->dropColumn('user_id');
         });
     }
 };
