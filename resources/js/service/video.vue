@@ -47,7 +47,7 @@ const chunkSummary = computed(() => {
     if (!isRecording.value) return null
     const total = chunkInfo.value.totalChunks
     const current = chunkInfo.value.currentChunk
-    if (!total || total <= 1 || !current) return null
+    if (!total || !current) return null
     return { current, total }
 })
 
@@ -419,7 +419,6 @@ const startNewChunk = async () => {
     }
 
     mediaRecorder.onstop = () => {
-        setTimeout(() => {
             // сохраняем текущий чанк ВСЕГДА, если есть данные
             if (chunkBuffer.length > 0) {
                 videoChunks.push({
@@ -440,7 +439,6 @@ const startNewChunk = async () => {
                 }
                 sendVideoToServer()
             }
-        }, 200)
     }
 
     chunkInfo.value.currentChunk = videoChunks.length + 1
