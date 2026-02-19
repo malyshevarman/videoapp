@@ -17,7 +17,7 @@ const orientationLocked = ref(false) // Блокировка ориентаци�
 let mediaRecorder
 let stream
 let videoChunks = []
-let currentChunk = []
+let recorderTransitionPromise = null
 
 const uploadProgress = ref(0)
 const uploading = ref(false)
@@ -26,7 +26,6 @@ const defectsLocal = ref([])
 
 // Новые состояния
 const torchEnabled = ref(false)
-const facingMode = ref('environment')
 const microphoneEnabled = ref(true)
 
 const canvas = ref(null)
@@ -106,6 +105,41 @@ const clearTimer = () => {
     }
 }
 
+const setInputAudioEnabled = (enabled) => {
+    if (!stream) return
+    stream.getAudioTracks().forEach(track => {
+        track.enabled = enabled
+    })
+}
+
+const stopRecorderSafely = async () => {
+    if (!mediaRecorder || mediaRecorder.state === 'inactive') return
+    if (recorderTransitionPromise) {
+        await recorderTransitionPromise
+        return
+    }
+
+    const recorder = mediaRecorder
+    recorderTransitionPromise = new Promise(resolve => {
+        const onStop = () => {
+            recorder.removeEventListener('stop', onStop)
+            if (mediaRecorder === recorder) mediaRecorder = null
+            recorderTransitionPromise = null
+            resolve()
+        }
+        recorder.addEventListener('stop', onStop, { once: true })
+    })
+
+    try {
+        recorder.requestData?.()
+    } catch (e) {
+        console.warn('requestData error:', e)
+    }
+
+    recorder.stop()
+    await recorderTransitionPromise
+}
+
 // Функции для работы с ориентацией
 const checkOrientation = () => {
     const isLandscape = window.innerWidth > window.innerHeight
@@ -160,11 +194,6 @@ const unlockOrientation = () => {
 
 const toggleTorch = async () => {
     if (!stream) return
-    if (facingMode.value === 'user') {
-        alert('Фонарик доступен только на задней камере')
-        return
-    }
-
     const videoTrack = stream.getVideoTracks()[0]
     const capabilities = videoTrack.getCapabilities?.()
 
@@ -205,26 +234,13 @@ const drawCanvasFrame = () => {
 
         canvasCtx.value.clearRect(0, 0, canvas.value.width, canvas.value.height)
 
-        if (facingMode.value === 'user') {
-            canvasCtx.value.save()
-            canvasCtx.value.scale(-1, 1)
-            canvasCtx.value.drawImage(
-                video.value,
-                -canvas.value.width,
-                0,
-                canvas.value.width,
-                canvas.value.height
-            )
-            canvasCtx.value.restore()
-        } else {
-            canvasCtx.value.drawImage(
+        canvasCtx.value.drawImage(
                 video.value,
                 0,
                 0,
                 canvas.value.width,
                 canvas.value.height
             )
-        }
 
         requestAnimationFrame(draw)
     }
@@ -241,12 +257,14 @@ const startRecordingHandler = async () => {
     recordingStartTime.value = Date.now()
     totalRecordingTime.value = 0
     totalPauseTime.value = 0
+    pauseStartTime = 0
+    stopReason.value = null
+    setInputAudioEnabled(microphoneEnabled.value)
 
     lockOrientation()
     orientationLocked.value = true
 
     videoChunks = []
-    currentChunk = []
 
     chunkInfo.value = {
         totalChunks: 0,
@@ -271,10 +289,8 @@ const toggleMicrophone = () => {
 
     microphoneEnabled.value = !microphoneEnabled.value
 
-    const audioTrack = stream.getAudioTracks()[0]
-    if (audioTrack) {
-        audioTrack.enabled = microphoneEnabled.value
-    }
+    if (isPaused.value) return
+    setInputAudioEnabled(microphoneEnabled.value)
 }
 
 const startPreview = async () => {
@@ -405,7 +421,7 @@ const showWarning = (message) => {
 
 
 const startNewChunk = async () => {
-    if (!stream || !isRecording.value) return
+    if (!stream || !isRecording.value || isPaused.value) return
 
     const mimeType = getSupportedMimeType()
     if (!mimeType) {
@@ -414,6 +430,7 @@ const startNewChunk = async () => {
         return
     }
 
+    const chunkBuffer = []
     mediaRecorder = new MediaRecorder(getCombinedStream(), {
         mimeType,
         videoBitsPerSecond: 5000000
@@ -421,20 +438,19 @@ const startNewChunk = async () => {
 
     mediaRecorder.ondataavailable = e => {
         if (e.data.size > 0) {
-            currentChunk.push(e.data)
+            chunkBuffer.push(e.data)
         }
     }
 
     mediaRecorder.onstop = () => {
         setTimeout(() => {
             // сохраняем текущий чанк ВСЕГДА, если есть данные
-            if (currentChunk.length > 0) {
+            if (chunkBuffer.length > 0) {
                 videoChunks.push({
-                    chunk: currentChunk.slice(),
-                    cameraType: facingMode.value,
+                    chunk: chunkBuffer.slice(),
+                    cameraType: 'environment',
                     duration: Date.now() - chunkInfo.value.chunkStartTime
                 })
-                currentChunk = []
             }
             chunkInfo.value.totalChunks = videoChunks.length
             chunkInfo.value.currentChunk = videoChunks.length
@@ -458,18 +474,20 @@ const startNewChunk = async () => {
 }
 
 const togglePauseRecording = async () => {
-    if (!isRecording.value || !mediaRecorder) return
+    if (!isRecording.value) return
+    if (recorderTransitionPromise) return
 
     // pause
     if (!isPaused.value) {
         isPaused.value = true
         pauseStartTime = Date.now()
         clearTimer()
+        setInputAudioEnabled(false)
 
         // Всегда режем текущий чанк через stop, чтобы избежать "залипания" кадра
         // на некоторых устройствах при native pause/resume MediaRecorder.
         stopReason.value = 'pause'
-        if (mediaRecorder.state !== 'inactive') mediaRecorder.stop()
+        await stopRecorderSafely()
         return
     }
 
@@ -479,6 +497,7 @@ const togglePauseRecording = async () => {
         totalPauseTime.value += Date.now() - pauseStartTime
         pauseStartTime = 0
     }
+    setInputAudioEnabled(microphoneEnabled.value)
 
     stopReason.value = null
     // стартуем новый чанк после паузы
@@ -494,7 +513,7 @@ const togglePauseRecording = async () => {
 
 
 const stopRecording = async () => {
-    if (!mediaRecorder || mediaRecorder.state === 'inactive') return
+    if (!isRecording.value) return
 
     const missingTimecodes = defectsLocal.value.filter(
         d => d.time == null || d.time === 0
@@ -510,6 +529,7 @@ const stopRecording = async () => {
     isRecording.value = false
     isPaused.value = false
     clearTimer()
+    setInputAudioEnabled(microphoneEnabled.value)
 
     unlockOrientation()
     orientationLocked.value = false
@@ -519,8 +539,18 @@ const stopRecording = async () => {
         pauseStartTime = 0
     }
 
+    const hadActiveRecorder = !!mediaRecorder && mediaRecorder.state !== 'inactive'
     stopReason.value = 'final'
-    if (mediaRecorder.state !== 'inactive') mediaRecorder.stop()
+    await stopRecorderSafely()
+
+    if (!hadActiveRecorder) {
+        chunkInfo.value.totalDuration = Date.now() - recordingStartTime.value - totalPauseTime.value
+        if (videoChunks.length === 0) {
+            uploadStatus.value = 'Р’РёРґРµРѕ РЅРµ Р·Р°РїРёСЃР°Р»РѕСЃСЊ'
+            return
+        }
+        sendVideoToServer()
+    }
 }
 
 
@@ -660,12 +690,8 @@ const getStatusColor = (status) => {
                     <button
                         class="control-button"
                         @click="toggleTorch"
-                        :class="{
-                            active: torchEnabled,
-                            disabled: facingMode === 'user'
-                        }"
+                        :class="{ active: torchEnabled }"
                         title="Фонарик"
-                        :disabled="facingMode === 'user'"
                     >
                         <svg
                             width="24"
