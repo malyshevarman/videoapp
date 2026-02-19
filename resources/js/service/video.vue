@@ -28,10 +28,6 @@ const defectsLocal = ref([])
 const torchEnabled = ref(false)
 const microphoneEnabled = ref(true)
 
-const canvas = ref(null)
-const canvasCtx = ref(null)
-let canvasStream = null
-
 // Для отслеживания чанков и таймкодов
 const chunkInfo = ref({
     totalChunks: 0,
@@ -110,6 +106,20 @@ const setInputAudioEnabled = (enabled) => {
     stream.getAudioTracks().forEach(track => {
         track.enabled = enabled
     })
+}
+
+const ensurePreviewPlaying = async () => {
+    if (!video.value || !stream) return
+    if (video.value.srcObject !== stream) {
+        video.value.srcObject = stream
+    }
+    if (video.value.paused || video.value.readyState < 2) {
+        try {
+            await video.value.play()
+        } catch (e) {
+            console.warn('Video preview play error:', e)
+        }
+    }
 }
 
 const stopRecorderSafely = async () => {
@@ -214,41 +224,6 @@ const toggleTorch = async () => {
 }
 
 
-let drawLoopRunning = false
-
-const drawCanvasFrame = () => {
-    if (!canvasCtx.value || !video.value) return
-
-    drawLoopRunning = true
-
-    const draw = () => {
-        if (!drawLoopRunning) return
-
-        if (
-            canvas.value.width !== video.value.videoWidth ||
-            canvas.value.height !== video.value.videoHeight
-        ) {
-            canvas.value.width = video.value.videoWidth
-            canvas.value.height = video.value.videoHeight
-        }
-
-        canvasCtx.value.clearRect(0, 0, canvas.value.width, canvas.value.height)
-
-        canvasCtx.value.drawImage(
-                video.value,
-                0,
-                0,
-                canvas.value.width,
-                canvas.value.height
-            )
-
-        requestAnimationFrame(draw)
-    }
-
-    draw()
-}
-
-
 const startRecordingHandler = async () => {
     if (!stream) return
 
@@ -313,14 +288,7 @@ const startPreview = async () => {
         }
 
         video.value.srcObject = stream
-
-        // создаём canvas для записи сразу
-        canvas.value = document.createElement('canvas')
-        canvasCtx.value = canvas.value.getContext('2d')
-
-        // захватываем поток с canvas
-        canvasStream = canvas.value.captureStream(30)
-        drawCanvasFrame()
+        await ensurePreviewPlaying()
 
         const videoTrack = stream.getVideoTracks()[0]
         const capabilities = videoTrack.getCapabilities?.()
@@ -422,6 +390,7 @@ const showWarning = (message) => {
 
 const startNewChunk = async () => {
     if (!stream || !isRecording.value || isPaused.value) return
+    await ensurePreviewPlaying()
 
     const mimeType = getSupportedMimeType()
     if (!mimeType) {
@@ -431,7 +400,14 @@ const startNewChunk = async () => {
     }
 
     const chunkBuffer = []
-    mediaRecorder = new MediaRecorder(getCombinedStream(), {
+    const combinedStream = getCombinedStream()
+    if (!combinedStream || combinedStream.getVideoTracks().length === 0) {
+        showWarning('Не удалось получить видео поток для записи')
+        stopRecording()
+        return
+    }
+
+    mediaRecorder = new MediaRecorder(combinedStream, {
         mimeType,
         videoBitsPerSecond: 5000000
     })
@@ -643,7 +619,12 @@ const sendVideoToServer = async () => {
 }
 
 const getCombinedStream = () => {
-    const combined = canvasStream.clone()
+    if (!stream) return null
+    const combined = new MediaStream()
+    const sourceVideoTrack = stream.getVideoTracks()[0]
+    if (sourceVideoTrack) {
+        combined.addTrack(sourceVideoTrack.clone())
+    }
 
     stream.getAudioTracks().forEach(track => {
         combined.addTrack(track)
