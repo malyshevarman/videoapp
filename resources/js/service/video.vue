@@ -419,7 +419,8 @@ const startNewChunk = async () => {
     }
 
     mediaRecorder.onstop = () => {
-            // сохраняем текущий чанк ВСЕГДА, если есть данные
+        // iOS can deliver final dataavailable slightly after stop.
+        setTimeout(() => {
             if (chunkBuffer.length > 0) {
                 videoChunks.push({
                     chunk: chunkBuffer.slice(),
@@ -430,7 +431,6 @@ const startNewChunk = async () => {
             chunkInfo.value.totalChunks = videoChunks.length
             chunkInfo.value.currentChunk = videoChunks.length
 
-            // если это финальная остановка — отправляем
             if (stopReason.value === 'final') {
                 chunkInfo.value.totalDuration = Date.now() - recordingStartTime.value - totalPauseTime.value
                 if (videoChunks.length === 0) {
@@ -439,14 +439,14 @@ const startNewChunk = async () => {
                 }
                 sendVideoToServer()
             }
+        }, 350)
     }
 
     chunkInfo.value.currentChunk = videoChunks.length + 1
     chunkInfo.value.totalChunks = Math.max(chunkInfo.value.totalChunks, chunkInfo.value.currentChunk)
     chunkInfo.value.chunkStartTime = Date.now()
-    mediaRecorder.start()
+    mediaRecorder.start(1000)
 }
-
 const togglePauseRecording = async () => {
     if (!isRecording.value) return
     if (recorderTransitionPromise) return
@@ -520,13 +520,22 @@ const stopRecording = async () => {
     if (!hadActiveRecorder) {
         chunkInfo.value.totalDuration = Date.now() - recordingStartTime.value - totalPauseTime.value
         if (videoChunks.length === 0) {
-            uploadStatus.value = 'Р’РёРґРµРѕ РЅРµ Р·Р°РїРёСЃР°Р»РѕСЃСЊ'
+            uploadStatus.value = 'Видео не записалось'
             return
         }
         sendVideoToServer()
+        return
     }
-}
 
+    setTimeout(() => {
+        if (uploading.value) return
+        if (videoChunks.length === 0) {
+            uploadStatus.value = 'Видео не записалось'
+            return
+        }
+        sendVideoToServer()
+    }, 800)
+}
 
 const sendVideoToServer = async () => {
     const missingTimecodes = defectsLocal.value.filter(d => d.time == null || d.time === 0)
@@ -621,7 +630,7 @@ const getCombinedStream = () => {
     const combined = new MediaStream()
     const sourceVideoTrack = stream.getVideoTracks()[0]
     if (sourceVideoTrack) {
-        combined.addTrack(sourceVideoTrack.clone())
+        combined.addTrack(sourceVideoTrack)
     }
 
     stream.getAudioTracks().forEach(track => {
