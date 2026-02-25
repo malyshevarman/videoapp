@@ -41,7 +41,7 @@
                     <li class="user-header bg-primary">
                          <p>
                             {{ Auth::user()->name }}
-                            <small>Администратор</small>
+                            <small>{{ Auth::user()->isAdmin() ? 'Администратор' : 'Менеджер' }}</small>
                         </p>
                     </li>
                     <!-- Menu Footer-->
@@ -89,6 +89,20 @@
                             <p>Сервисы</p>
                         </a>
                     </li>
+                    @if(Auth::user()->isAdmin())
+                        <li class="nav-item">
+                            <a href="{{ route('admin.users.index') }}" class="nav-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-users"></i>
+                                <p>Пользователи</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ route('admin.dealers.index') }}" class="nav-link {{ request()->routeIs('admin.dealers.*') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-building"></i>
+                                <p>Диллеры</p>
+                            </a>
+                        </li>
+                    @endif
 
 
                 </ul>

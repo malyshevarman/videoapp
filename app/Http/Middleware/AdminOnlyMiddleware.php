@@ -7,16 +7,16 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
-class AdminMiddleware
+class AdminOnlyMiddleware
 {
     public function handle(Request $request, Closure $next): Response
     {
         if (!Auth::check()) {
-            abort(401, 'Требуется авторизация.');
+            abort(401);
         }
 
-        if (!Auth::user()->canAccessAdminPanel()) {
-            abort(403, 'Доступ в админку запрещён.');
+        if (!Auth::user()->isAdmin()) {
+            abort(403, 'Доступ только для администратора.');
         }
 
         return $next($request);

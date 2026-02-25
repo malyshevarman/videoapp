@@ -5,6 +5,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\DealerController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\Api\ExternalServiceController;
 
 Auth::routes(['register' => false]);
@@ -44,5 +46,13 @@ Route::middleware(['auth', 'admin'])
             ->only(['index', 'edit', 'update', 'destroy']);
 
         Route::get('services/{service}/video', [ServiceController::class, 'video'])->name('services.video');
+
+        Route::middleware('admin_only')->group(function () {
+            Route::resource('users', UserController::class)
+                ->except(['show']);
+
+            Route::resource('dealers', DealerController::class)
+                ->except(['show']);
+        });
 
     });

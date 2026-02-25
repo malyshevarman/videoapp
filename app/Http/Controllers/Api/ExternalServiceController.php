@@ -375,10 +375,10 @@ class ExternalServiceController extends Controller
                 $chunkFile->move($tempDir, 'chunk_' . str_pad($i, 4, '0', STR_PAD_LEFT));
             }
 
-            $video = Video::where('service_order_id', $serviceOrderId)->first();
-
-            if ($video) {
-                $video->delete();
+            $existingVideos = Video::where('service_order_id', $serviceOrderId)->get();
+            foreach ($existingVideos as $existingVideo) {
+                // delete() вызовет hook в модели и удалит файл с диска
+                $existingVideo->delete();
             }
 
             $finalFileName = 'video_' . $serviceOrderId . '_' . time() . '.mp4';

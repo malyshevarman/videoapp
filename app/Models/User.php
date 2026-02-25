@@ -4,6 +4,7 @@ namespace App\Models;
 
 // Убедитесь, что используете правильные импорты
 use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -22,6 +23,7 @@ class User extends Authenticatable
         'email',
         'password',
         'is_admin',
+        'role',
     ];
 
     /**
@@ -46,5 +48,25 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_admin' => 'boolean',
         ];
+    }
+
+    public function dealers(): BelongsToMany
+    {
+        return $this->belongsToMany(Dealer::class)->withTimestamps();
+    }
+
+    public function isAdmin(): bool
+    {
+        return ($this->role ?? null) === 'admin' || (bool) $this->is_admin;
+    }
+
+    public function isManager(): bool
+    {
+        return ($this->role ?? null) === 'manager';
+    }
+
+    public function canAccessAdminPanel(): bool
+    {
+        return $this->isAdmin() || $this->isManager();
     }
 }
