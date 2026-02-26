@@ -329,7 +329,7 @@
 
                 <div class="info-panel mb-0">
                     <details class="json-collapsible">
-                        <summary>Полный JSON (клик для раскрытия)</summary>
+                        <summary>Полный JSON </summary>
                         <pre class="service-json-view mt-2 mb-0">{{ $serviceJson }}</pre>
                     </details>
                 </div>
