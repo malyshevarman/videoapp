@@ -1,10 +1,10 @@
 @extends('layouts.admin')
 
-@section('title', 'Диллеры')
-@section('page_title', 'Диллеры')
+@section('title', 'Дилеры')
+@section('page_title', 'Дилеры')
 
 @section('breadcrumb')
-    <li class="breadcrumb-item active">Диллеры</li>
+    <li class="breadcrumb-item active">Дилеры</li>
 @endsection
 
 @section('content')
@@ -13,7 +13,7 @@
             <div class="card-header">
                 <div class="d-flex flex-wrap align-items-center justify-content-between" style="gap: 12px;">
                     <div>
-                        <h3 class="card-title mb-1">Список диллеров</h3>
+                        <h3 class="card-title mb-1">Список дилеров</h3>
                     </div>
 
                     <div class="d-flex flex-wrap" style="gap: 8px;">
@@ -40,7 +40,7 @@
                         </form>
 
                         <a href="{{ route('admin.dealers.create') }}" class="btn btn-sm btn-success">
-                            <i class="fas fa-plus mr-1"></i> Добавить диллера
+                            <i class="fas fa-plus mr-1"></i> Добавить дилера
                         </a>
                     </div>
                 </div>
@@ -84,7 +84,7 @@
                                         <a href="{{ route('admin.dealers.edit', $dealer) }}" class="btn btn-sm btn-outline-primary mr-1" title="Редактировать">
                                             <i class="fas fa-pen"></i>
                                         </a>
-                                        <form action="{{ route('admin.dealers.destroy', $dealer) }}" method="POST" class="d-inline" onsubmit="return confirm('Удалить диллера?');">
+                                        <form action="{{ route('admin.dealers.destroy', $dealer) }}" method="POST" class="d-inline" onsubmit="return confirm('Удалить дилера?');">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="btn btn-sm btn-outline-danger" title="Удалить">
@@ -100,7 +100,7 @@
                 @else
                     <div class="p-4 text-center text-muted">
                         <div class="mb-2"><i class="fas fa-building fa-2x"></i></div>
-                        Диллеры не найдены.
+                        Дилеры не найдены.
                     </div>
                 @endif
             </div>

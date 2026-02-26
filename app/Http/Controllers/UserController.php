@@ -12,14 +12,22 @@ class UserController extends Controller
     public function index(Request $request)
     {
         $search = trim((string) $request->query('search'));
+        $likeOperator = User::query()->getModel()->getConnection()->getDriverName() === 'pgsql'
+            ? 'ilike'
+            : 'like';
 
         $users = User::query()
             ->with('dealers:id,name')
-            ->when($search !== '', function ($query) use ($search) {
-                $query->where(function ($subQuery) use ($search) {
-                    $subQuery->where('name', 'like', '%' . $search . '%')
-                        ->orWhere('email', 'like', '%' . $search . '%')
-                        ->orWhere('id', $search);
+            ->when($search !== '', function ($query) use ($search, $likeOperator) {
+                $searchId = is_numeric($search) ? (int) $search : null;
+
+                $query->where(function ($subQuery) use ($search, $searchId, $likeOperator) {
+                    $subQuery->where('name', $likeOperator, '%' . $search . '%')
+                        ->orWhere('email', $likeOperator, '%' . $search . '%');
+
+                    if ($searchId !== null) {
+                        $subQuery->orWhere('id', $searchId);
+                    }
                 });
             })
             ->orderByDesc('id')

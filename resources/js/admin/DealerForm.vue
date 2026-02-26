@@ -27,7 +27,7 @@ const fieldError = (name) => {
   <div class="form-shell">
     <section class="panel">
       <div class="panel-head">
-        <h3 class="panel-title">Карточка диллера</h3>
+        <h3 class="panel-title">Карточка дилера</h3>
         <p class="panel-subtitle">Название, внешний ID и логотип</p>
       </div>
 
@@ -62,7 +62,7 @@ const fieldError = (name) => {
         <div v-if="isEdit && currentLogoUrl" class="field span-all">
           <label class="label">Текущий логотип</label>
           <div class="logo-box">
-            <img :src="currentLogoUrl" alt="Логотип диллера" class="logo-preview">
+            <img :src="currentLogoUrl" alt="Логотип дилера" class="logo-preview">
             <div class="logo-meta">
               <div class="hint">Можно загрузить новый логотип поверх текущего или удалить его.</div>
               <div class="checkbox-row">

@@ -78,12 +78,12 @@ const dealerItemError = computed(() => {
 
     <section class="panel">
       <div class="panel-head">
-        <h3 class="panel-title">Диллеры</h3>
-        <p class="panel-subtitle">Привязка пользователя к нескольким диллерам</p>
+        <h3 class="panel-title">Дилеры</h3>
+        <p class="panel-subtitle">Привязка пользователя к нескольким дилерам</p>
       </div>
 
       <div class="field">
-        <label for="uf_dealers" class="label">Выбор диллеров</label>
+        <label for="uf_dealers" class="label">Выбор дилеров</label>
         <MultiSelect
           id="uf_dealers"
           v-model="form.dealer_ids"
@@ -93,7 +93,7 @@ const dealerItemError = computed(() => {
           filter
           display="chip"
           :max-selected-labels="4"
-          placeholder="Выберите диллеров"
+          placeholder="Выберите дилеров"
           class="full"
           :invalid="!!fieldError('dealer_ids') || !!dealerItemError"
         />

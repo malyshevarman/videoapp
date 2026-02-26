@@ -56,7 +56,7 @@
                                 <th>Имя</th>
                                 <th>Email</th>
                                 <th>Роль</th>
-                                <th>Диллеры</th>
+                                <th>Дилеры</th>
                                 <th>Создан</th>
                                 <th class="text-right">Действия</th>
                             </tr>

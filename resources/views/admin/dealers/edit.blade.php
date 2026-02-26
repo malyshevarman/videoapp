@@ -1,10 +1,10 @@
 @extends('layouts.admin')
 
-@section('title', 'Редактирование диллера')
-@section('page_title', 'Редактирование диллера')
+@section('title', 'Редактирование дилера')
+@section('page_title', 'Редактирование дилера')
 
 @section('breadcrumb')
-    <li class="breadcrumb-item"><a href="{{ route('admin.dealers.index') }}">Диллеры</a></li>
+    <li class="breadcrumb-item"><a href="{{ route('admin.dealers.index') }}">Дилеры</a></li>
     <li class="breadcrumb-item active">#{{ $dealer->id }}</li>
 @endsection
 

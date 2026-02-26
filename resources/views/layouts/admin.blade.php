@@ -99,7 +99,7 @@
                         <li class="nav-item">
                             <a href="{{ route('admin.dealers.index') }}" class="nav-link {{ request()->routeIs('admin.dealers.*') ? 'active' : '' }}">
                                 <i class="nav-icon fas fa-building"></i>
-                                <p>Диллеры</p>
+                                <p>Дилеры</p>
                             </a>
                         </li>
                     @endif

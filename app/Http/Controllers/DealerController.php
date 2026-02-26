@@ -14,13 +14,21 @@ class DealerController extends Controller
     public function index(Request $request)
     {
         $search = trim((string) $request->query('search'));
+        $likeOperator = Dealer::query()->getModel()->getConnection()->getDriverName() === 'pgsql'
+            ? 'ilike'
+            : 'like';
 
         $dealers = Dealer::query()
-            ->when($search !== '', function ($query) use ($search) {
-                $query->where(function ($subQuery) use ($search) {
-                    $subQuery->where('name', 'like', '%' . $search . '%')
-                        ->orWhere('external_id', 'like', '%' . $search . '%')
-                        ->orWhere('id', $search);
+            ->when($search !== '', function ($query) use ($search, $likeOperator) {
+                $searchId = is_numeric($search) ? (int) $search : null;
+
+                $query->where(function ($subQuery) use ($search, $searchId, $likeOperator) {
+                    $subQuery->where('name', $likeOperator, '%' . $search . '%')
+                        ->orWhere('external_id', $likeOperator, '%' . $search . '%');
+
+                    if ($searchId !== null) {
+                        $subQuery->orWhere('id', $searchId);
+                    }
                 });
             })
             ->orderByDesc('id')
@@ -54,7 +62,7 @@ class DealerController extends Controller
         }
 
         return redirect()->route('admin.dealers.index')
-            ->with('success', 'Диллер создан.');
+            ->with('success', 'Дилер создан.');
     }
 
     public function edit(Dealer $dealer)
@@ -91,7 +99,7 @@ class DealerController extends Controller
         }
 
         return redirect()->route('admin.dealers.index')
-            ->with('success', 'Данные диллера обновлены.');
+            ->with('success', 'Данные дилера обновлены.');
     }
 
     public function destroy(Dealer $dealer)
@@ -99,7 +107,7 @@ class DealerController extends Controller
         $dealer->delete();
 
         return redirect()->route('admin.dealers.index')
-            ->with('success', 'Диллер удалён.');
+            ->with('success', 'Дилер удалён.');
     }
 
     protected function prepareLogoImage(UploadedFile $file): void

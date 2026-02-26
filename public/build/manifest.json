@@ -32,12 +32,12 @@
     "src": "resources/images/logo.svg"
   },
   "resources/js/app.js": {
-    "file": "assets/app-DG7n59rc.js",
+    "file": "assets/app-D6rb5Yeq.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
     "css": [
-      "assets/app-BpGJ-F1r.css"
+      "assets/app-By1fBjc5.css"
     ],
     "assets": [
       "assets/primeicons-DMOk5skT.eot",
