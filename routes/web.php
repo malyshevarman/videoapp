@@ -46,6 +46,7 @@ Route::middleware(['auth', 'admin'])
             ->only(['index', 'edit', 'update', 'destroy']);
 
         Route::get('services/{service}/video', [ServiceController::class, 'video'])->name('services.video');
+        Route::get('services/{service}/info', [ServiceController::class, 'info'])->name('services.info');
 
         Route::middleware('admin_only')->group(function () {
             Route::resource('users', UserController::class)

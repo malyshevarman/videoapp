@@ -97,8 +97,13 @@
                                         <div class="text-muted small">{{ $order->created_at->format('H:i') }}</div>
                                     </td>
                                     <td class="text-right text-nowrap">
+                                        <a href="{{ route('admin.services.info', $order->id) }}"
+                                           class="btn btn-sm btn-outline-info mr-1 service-action-btn"
+                                           title="Информация о сервисе">
+                                            <i class="fas fa-info"></i>
+                                        </a>
                                         <a href="{{ route('admin.services.edit', $order->id) }}"
-                                           class="btn btn-sm btn-outline-primary mr-1"
+                                           class="btn btn-sm btn-outline-primary mr-1 service-action-btn"
                                            title="Открыть и редактировать">
                                             <i class="fas fa-pen"></i>
                                         </a>
@@ -157,6 +162,15 @@
 
         .font-weight-semibold {
             font-weight: 600;
+        }
+
+        .service-action-btn {
+            width: 31px;
+            height: 31px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
 
         @media (max-width: 768px) {
