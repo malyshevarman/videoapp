@@ -304,7 +304,6 @@
                                             <th>ID</th>
                                             <th>status</th>
                                             <th>timestamp</th>
-                                            <th>createdBy</th>
                                         </tr>
                                         </thead>
                                         <tbody>
@@ -313,7 +312,7 @@
                                                 <td>{{ $record['id'] ?? '—' }}</td>
                                                 <td>{{ $record['status'] ?? '—' }}</td>
                                                 <td>{{ $fmt($record['timestamp'] ?? null) }}</td>
-                                                <td>{{ $record['createdBy'] ?? '—' }}</td>
+
                                             </tr>
                                         @endforeach
                                         </tbody>
