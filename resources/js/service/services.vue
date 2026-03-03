@@ -53,7 +53,9 @@ onMounted(() => {
 const newDefect = reactive({
     time: null,
     title: '',
-    status: 'green'
+    status: 'green',
+    customerApproved:"",
+    deferredTaskDate:"",
 })
 
 const loadVideo = async () => {
@@ -76,7 +78,9 @@ const addDefect = async () => {
         time: 0,
         title: newDefect.title,
         status: newDefect.status || 'green',
-        preview: null
+        preview: null,
+        customerApproved:"",
+        deferredTaskDate:"",
     }
 
     defects.value.push(item)
@@ -100,7 +104,7 @@ const saveDefects = async () => {
         },
         body: JSON.stringify({
             service_id: service.id,
-            defects: defects.value.map(({ id, time, title, status }) => ({ id, time, title, status }))
+            defects: defects.value.map(({ id, time, title, status,customerApproved,deferredTaskDate }) => ({ id, time, title, status,customerApproved,deferredTaskDate }))
         })
     })
 
@@ -151,9 +155,6 @@ const copyServiceLink = async (event) => {
     event.preventDefault()
 
     try {
-        if (defects.value.length > 0) {
-            await saveDefects()
-        }
 
         await fetch(`/services/${service.public_url}/sent`, {
             method: 'POST',

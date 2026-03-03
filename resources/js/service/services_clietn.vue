@@ -355,31 +355,46 @@ function approveActiveItem() {
     })
 
 }
-function submitAll() {
+async function submitAll() {
     if (!allHaveStatus.value) return
 
-    fetch(`/services/${props.service.public_url}/update`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document
-                .querySelector('meta[name="csrf-token"]')
-                .getAttribute('content'),
-            'Accept': 'application/json',
-        },
-        body: JSON.stringify({
-            items: localItems.value,
-        }),
-    })
-        .then(res => res.json())
-        .then(data => {
-            toast.success('Решение принято', {
-                description: 'Все предложения обработаны',
-            })
+    try {
+        const res = await fetch(`/services/${props.service.public_url}/update`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document
+                    .querySelector('meta[name="csrf-token"]')
+                    .getAttribute('content'),
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+                items: localItems.value,
+            }),
         })
-        .catch(err => {
-            console.error(err)
+
+        let data = null
+        try {
+            data = await res.json()
+        } catch {
+            data = null
+        }
+
+        if (!res.ok) {
+            const message = data?.message ?? 'Ошибка сохранения'
+            throw new Error(message)
+        }
+
+        toast.success('Решение принято', {
+            description: 'Все предложения обработаны',
         })
+    } catch (err) {
+        const message = err instanceof Error ? err.message : 'Ошибка сохранения'
+        toast.error('Ошибка', {
+            description: message,
+        })
+        console.error(err)
+    }
 }
 
 

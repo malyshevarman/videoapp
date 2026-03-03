@@ -27,6 +27,8 @@ class ExternalServiceController extends Controller
             'defects' => 'required|array',
             'defects.*.id' => 'required',
             'defects.*.title' => 'required|string',
+            'customerApproved'=>'string',
+            'deferredTaskDate'=>'string',
         ]);
 
         if ($validator->fails()) {
@@ -43,6 +45,8 @@ class ExternalServiceController extends Controller
             return [
                 'taskId'   => (string) $defect['id'],
                 'taskName' => $defect['title'],
+                'customerApproved' => "",
+                'deferredTaskDate' => "",
             ];
         });
 
