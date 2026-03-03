@@ -53,11 +53,34 @@
         };
 
         $taskNameById = [];
+        $taskStatusMap = [
+            'approved' => 'Согласовано',
+            'rejected' => 'Отклонено',
+            'deferred' => 'Отложено',
+        ];
+        $taskAmountsById = [];
         foreach ($tasks as $task) {
             $taskId = (string) ($task['taskId'] ?? '');
             if ($taskId !== '') {
                 $taskNameById[$taskId] = $task['taskName'] ?? null;
             }
+        }
+        foreach ($details as $detail) {
+            if (!is_array($detail)) {
+                continue;
+            }
+            $taskId = (string) ($detail['taskId'] ?? '');
+            if ($taskId === '') {
+                continue;
+            }
+            if (!isset($taskAmountsById[$taskId])) {
+                $taskAmountsById[$taskId] = [
+                    'exVat' => 0.0,
+                    'incVat' => 0.0,
+                ];
+            }
+            $taskAmountsById[$taskId]['exVat'] += (float) ($detail['positionAmountExVat'] ?? 0);
+            $taskAmountsById[$taskId]['incVat'] += (float) ($detail['positionAmountIncVat'] ?? 0);
         }
     @endphp
 
@@ -217,13 +240,25 @@
                                         <tr>
                                             <th style="width: 90px;">taskId</th>
                                             <th>Название</th>
+                                            <th style="width: 160px;">Статус</th>
+                                            <th style="width: 150px;">Без НДС</th>
+                                            <th style="width: 150px;">С НДС</th>
                                         </tr>
                                         </thead>
                                         <tbody>
                                         @foreach($tasks as $task)
+                                            @php
+                                                $taskId = (string) ($task['taskId'] ?? '');
+                                                $statusKey = (string) ($task['customerApproved'] ?? '');
+                                                $statusLabel = $taskStatusMap[$statusKey] ?? null;
+                                                $amounts = $taskAmountsById[$taskId] ?? null;
+                                            @endphp
                                             <tr>
                                                 <td>{{ $task['taskId'] ?? '—' }}</td>
                                                 <td>{{ $task['taskName'] ?? '—' }}</td>
+                                                <td>{{ $statusLabel ?? '—' }}</td>
+                                                <td>{{ $amounts ? number_format((float) $amounts['exVat'], 2, ',', ' ') : '—' }}</td>
+                                                <td>{{ $amounts ? number_format((float) $amounts['incVat'], 2, ',', ' ') : '—' }}</td>
                                             </tr>
                                         @endforeach
                                         </tbody>
@@ -261,6 +296,7 @@
                                                         <tbody>
                                                         @foreach($detail as $key => $value)
                                                             @continue(is_array($value))
+                                                            @continue($key === 'answers')
                                                             <tr>
                                                                 <th>{{ $key }}</th>
                                                                 <td>
@@ -280,6 +316,7 @@
 
                                                 @foreach($detail as $key => $value)
                                                     @continue(!is_array($value))
+                                                    @continue($key === 'answers')
                                                     <div class="mini-json mb-2">
                                                         <div class="mini-json__head">{{ $key }}</div>
                                                         <pre class="mini-json__body mb-0">{{ json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) }}</pre>
