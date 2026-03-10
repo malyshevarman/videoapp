@@ -13,10 +13,13 @@ import ItemsList from './components/ItemsList.vue'
 import StickyFooter from './components/StickyFooter.vue'
 import RejectModal from './components/RejectModal.vue'
 import DeferredModal from './components/DeferredModal.vue'
+import SubmissionSuccess from './components/SubmissionSuccess.vue'
 
 type Service = {
     id?: number | string
     visitStartTime?: string | Date
+    local_status?: string
+    localStatus?: string
     client?: { customerFirstName?: string }
     surveyObject?: { carBrand?: string; carModelCode?: string; carLicensePlate?: string }
     responsibleEmployee?: { specialistFirstName?: string; specialistLastName?: string }
@@ -64,6 +67,7 @@ const videoUrl = ref(null)
 const isRejectOpen = ref(false)
 const isDeferredOpen = ref(false)
 const previewVideo = ref<HTMLVideoElement | null>(null)
+const localServiceStatus = ref(props.service.local_status ?? props.service.localStatus ?? 'open')
 
 onMounted(() => {
     loadVideo()
@@ -89,6 +93,7 @@ const activeItemNumber = computed(() => {
 const visitDate = computed(() =>
     dayjs(props.service.visitStartTime).format('D MMMM YYYY')
 )
+const isClosed = computed(() => localServiceStatus.value === 'closed')
 const approvedStats = computed(() => {
     return localItems.value.reduce(
         (acc, item) => {
@@ -388,6 +393,7 @@ async function submitAll() {
         toast.success('Решение принято', {
             description: 'Все предложения обработаны',
         })
+        localServiceStatus.value = data?.local_status ?? 'closed'
     } catch (err) {
         const message = err instanceof Error ? err.message : 'Ошибка сохранения'
         toast.error('Ошибка', {
@@ -455,12 +461,14 @@ const approvedRepairTimeHours = computed(() => {
 })
 </script>
 <template>
-    <div class="page">
+    <SubmissionSuccess v-if="isClosed" />
+
+    <div class="page" v-else>
         <!-- TOP CARD -->
-        <ServiceHeader :service="service" :visit-date="visitDate" />
+        <ServiceHeader v-if="!isClosed" :service="service" :visit-date="visitDate" />
 
         <!-- MAIN -->
-        <main class="main">
+        <main v-if="!isClosed" class="main">
             <div class="container">
                 <section class="panel">
                     <div class="panel__left">
@@ -631,6 +639,7 @@ const approvedRepairTimeHours = computed(() => {
 
         <!-- STICKY BOTTOM -->
         <StickyFooter
+            v-if="!isClosed"
             :sticky-open="stickyOpen"
             :approved-stats="approvedStats"
             :approved-items-list="approvedItemsList"
@@ -652,6 +661,7 @@ const approvedRepairTimeHours = computed(() => {
 
 
     <RejectModal
+        v-if="!isClosed"
         :is-open="isRejectOpen"
         :active-item-number="activeItemNumber"
         @close="closeRejectConfirm"
@@ -660,6 +670,7 @@ const approvedRepairTimeHours = computed(() => {
 
 
     <DeferredModal
+        v-if="!isClosed"
         :is-open="isDeferredOpen"
         :model-value="deferredTaskDateModel"
         :locale="ru"
