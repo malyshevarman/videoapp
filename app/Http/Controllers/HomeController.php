@@ -34,7 +34,9 @@ class HomeController extends Controller
 
     public function showservices($public_url)
     {
-        $service = ServiceOrder::where('public_url', $public_url)->with('mechanic')->firstOrFail();
+        $service = ServiceOrder::where('public_url', $public_url)
+            ->with('dealer')
+            ->with('mechanic')->firstOrFail();
 
         $records = $service->processStatusRecords ?? [];
         if (!is_array($records)) {
