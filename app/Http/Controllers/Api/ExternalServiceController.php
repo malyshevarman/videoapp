@@ -214,7 +214,7 @@ class ExternalServiceController extends Controller
             );
 
             $existingTasks = collect($order->tasks ?? []);
-            $existingDetails = collect($order->details ?? []);
+
 
             $mergedTasks = $existingTasks
                 ->concat($incomingTasks)
@@ -222,14 +222,9 @@ class ExternalServiceController extends Controller
                 ->values();
 
             if ($customerDecisionRecorded) {
-                // После решения клиента details замораживаются.
-                $mergedDetails = $existingDetails;
+
             } else {
-                // До решения клиента приоритет у свежих details из внешней системы.
-                $mergedDetails = $incomingDetails
-                    ->concat($existingDetails)
-                    ->unique(fn ($item) => (string) ($item['taskId'] ?? ''))
-                    ->values();
+
             }
         }
 
