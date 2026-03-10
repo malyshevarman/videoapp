@@ -141,6 +141,7 @@ class ServiceController extends Controller
             'reviewTemplateId' => $service->reviewTemplateId,
             'reviewName' => $service->reviewName,
             'timeSpent' => $service->timeSpent,
+            'localStatus' => $service->local_status,
             'defects' => $service->defects ?? null,
         ];
     }

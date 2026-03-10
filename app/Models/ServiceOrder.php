@@ -42,6 +42,7 @@ class ServiceOrder extends Model implements HasMedia
         'reviewTemplateId',
         'reviewName',
         'timeSpent',
+        'local_status',
 
         // корневые json-объекты/массивы
         'referenceObject',

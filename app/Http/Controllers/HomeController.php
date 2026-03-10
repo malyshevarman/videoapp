@@ -179,11 +179,13 @@ class HomeController extends Controller
         }
 
         $service->tasks = $tasks->values()->toArray();
+        $service->local_status = 'closed';
         $service->save();
 
         return response()->json([
             'success' => true,
             'tasks' => $service->tasks,
+            'local_status' => $service->local_status,
         ]);
     }
 

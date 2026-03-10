@@ -500,7 +500,7 @@ class ExternalServiceController extends Controller
 
         return response()->json(
             collect($order->toArray())
-                ->except(['defects', 'id', 'order_id', 'public_url'])
+                ->except(['defects', 'id', 'order_id', 'public_url','local_status'])
                 ->all()
         );
     }
