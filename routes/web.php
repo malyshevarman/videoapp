@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\Admin\ServiceReviewController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\DealerController;
 use App\Http\Controllers\UserController;
@@ -22,6 +23,8 @@ Route::get('/video/play/{id}', [HomeController::class, 'videoplay'])
 Route::get('/services/{public_url}/show', [HomeController::class, 'showservices'])->name('services.show');
 Route::post('/services/{public_url}/update', [HomeController::class, 'updateservices'])
     ->name('services.update');
+Route::post('/services/{public_url}/review', [HomeController::class, 'storereview'])
+    ->name('services.review');
 Route::post('/services/{public_url}/sent', [HomeController::class, 'markApprovalLinkSent'])
     ->middleware('auth')
     ->name('services.sent');
@@ -48,6 +51,7 @@ Route::middleware(['auth', 'admin'])
 
         Route::get('services/{service}/video', [ServiceController::class, 'video'])->name('services.video');
         Route::get('services/{service}/info', [ServiceController::class, 'info'])->name('services.info');
+        Route::get('reviews', [ServiceReviewController::class, 'index'])->name('reviews.index');
 
         Route::middleware('admin_only')->group(function () {
             Route::resource('users', UserController::class)

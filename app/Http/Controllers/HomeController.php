@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\ServiceOrderReview;
 use App\Models\Video;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -36,7 +37,9 @@ class HomeController extends Controller
     {
         $service = ServiceOrder::where('public_url', $public_url)
             ->with('dealer')
-            ->with('mechanic')->firstOrFail();
+            ->with('mechanic')
+            ->with('serviceReview')
+            ->firstOrFail();
 
         $records = $service->processStatusRecords ?? [];
         if (!is_array($records)) {
@@ -215,5 +218,30 @@ class HomeController extends Controller
         }
 
         return response()->json(['success' => true]);
+    }
+
+    public function storereview(Request $request, string $public_url)
+    {
+        $validated = $request->validate([
+            'info_usefulness' => 'required|integer|min:1|max:5',
+            'usability' => 'required|integer|min:1|max:5',
+            'video_content' => 'required|integer|min:1|max:5',
+            'video_image' => 'required|integer|min:1|max:5',
+            'video_sound' => 'required|integer|min:1|max:5',
+            'video_duration' => 'required|integer|min:1|max:5',
+            'comment' => 'nullable|string|max:2000',
+        ]);
+
+        $service = ServiceOrder::where('public_url', $public_url)->firstOrFail();
+
+        $review = ServiceOrderReview::query()->updateOrCreate(
+            ['order_id' => $service->id],
+            $validated
+        );
+
+        return response()->json([
+            'success' => true,
+            'review' => $review,
+        ]);
     }
 }

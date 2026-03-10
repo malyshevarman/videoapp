@@ -14,12 +14,15 @@ import StickyFooter from './components/StickyFooter.vue'
 import RejectModal from './components/RejectModal.vue'
 import DeferredModal from './components/DeferredModal.vue'
 import SubmissionSuccess from './components/SubmissionSuccess.vue'
+import ReviewForm from './components/ReviewForm.vue'
 
 type Service = {
     id?: number | string
+    public_url?: string
     visitStartTime?: string | Date
     local_status?: string
     localStatus?: string
+    service_review?: { id?: number | string }
     client?: { customerFirstName?: string }
     surveyObject?: { carBrand?: string; carModelCode?: string; carLicensePlate?: string }
     responsibleEmployee?: { specialistFirstName?: string; specialistLastName?: string }
@@ -68,6 +71,9 @@ const isRejectOpen = ref(false)
 const isDeferredOpen = ref(false)
 const previewVideo = ref<HTMLVideoElement | null>(null)
 const localServiceStatus = ref(props.service.local_status ?? props.service.localStatus ?? 'open')
+const isReviewFormOpen = ref(false)
+const hasReview = ref(Boolean(props.service.service_review?.id))
+const isReviewSubmitting = ref(false)
 
 onMounted(() => {
     loadVideo()
@@ -94,6 +100,7 @@ const visitDate = computed(() =>
     dayjs(props.service.visitStartTime).format('D MMMM YYYY')
 )
 const isClosed = computed(() => localServiceStatus.value === 'closed')
+const showSuccessScreen = computed(() => isClosed.value && !isReviewFormOpen.value)
 const approvedStats = computed(() => {
     return localItems.value.reduce(
         (acc, item) => {
@@ -403,6 +410,63 @@ async function submitAll() {
     }
 }
 
+function openReviewForm() {
+    if (hasReview.value) return
+    isReviewFormOpen.value = true
+}
+
+function closeReviewForm() {
+    isReviewFormOpen.value = false
+}
+
+async function submitReview(payload: {
+    info_usefulness: number | null
+    usability: number | null
+    video_content: number | null
+    video_image: number | null
+    video_sound: number | null
+    video_duration: number | null
+    comment: string
+}) {
+    if (!props.service.public_url || isReviewSubmitting.value) return
+
+    isReviewSubmitting.value = true
+
+    try {
+        const res = await fetch(`/services/${props.service.public_url}/review`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document
+                    .querySelector('meta[name="csrf-token"]')
+                    .getAttribute('content'),
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        })
+
+        const data = await res.json().catch(() => null)
+
+        if (!res.ok) {
+            throw new Error(data?.message ?? 'Ошибка отправки отзыва')
+        }
+
+        hasReview.value = true
+        isReviewFormOpen.value = false
+
+        toast.success('Отзыв отправлен', {
+            description: 'Спасибо за оценку сервиса',
+        })
+    } catch (err) {
+        const message = err instanceof Error ? err.message : 'Ошибка отправки отзыва'
+        toast.error('Ошибка', {
+            description: message,
+        })
+    } finally {
+        isReviewSubmitting.value = false
+    }
+}
+
 
 function goNext() {
     if (isLast.value) return
@@ -461,7 +525,18 @@ const approvedRepairTimeHours = computed(() => {
 })
 </script>
 <template>
-    <SubmissionSuccess v-if="isClosed" />
+    <ReviewForm
+        v-if="isClosed && isReviewFormOpen"
+        :submitting="isReviewSubmitting"
+        @back="closeReviewForm"
+        @submit="submitReview"
+    />
+
+    <SubmissionSuccess
+        v-else-if="showSuccessScreen"
+        :review-submitted="hasReview"
+        @open-review="openReviewForm"
+    />
 
     <div class="page" v-else>
         <!-- TOP CARD -->

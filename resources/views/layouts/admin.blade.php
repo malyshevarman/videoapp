@@ -74,6 +74,12 @@
                             <p>Сервисы</p>
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a href="{{ route('admin.reviews.index') }}" class="nav-link {{ request()->routeIs('admin.reviews.*') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-star"></i>
+                            <p>Отзывы</p>
+                        </a>
+                    </li>
                     @if(Auth::user()->isAdmin())
                         <li class="nav-item">
                             <a href="{{ route('admin.users.index') }}" class="nav-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">

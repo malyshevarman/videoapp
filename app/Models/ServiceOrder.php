@@ -111,7 +111,7 @@ class ServiceOrder extends Model implements HasMedia
 
     public function serviceReview()
     {
-        return $this->hasOne(ServiceOrderReview::class);
+        return $this->hasOne(ServiceOrderReview::class, 'order_id', 'id');
     }
 
     // ===== Настройка коллекций MediaLibrary =====

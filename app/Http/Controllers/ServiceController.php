@@ -12,15 +12,18 @@ class ServiceController extends Controller
     {
         $search = trim((string) $request->input('table_search'));
 
-        $query = $this->visibleServiceOrdersQuery($request)->select(
-            'id',
-            'public_url',
-            'processStatus',
-            'order_id',
-            'created_at',
-            'client',
-            'dealerCode'
-        );
+        $query = $this->visibleServiceOrdersQuery($request)
+            ->with('serviceReview')
+            ->select(
+                'id',
+                'public_url',
+                'processStatus',
+                'order_id',
+                'created_at',
+                'client',
+                'dealerCode',
+                'local_status'
+            );
 
         if ($search !== '') {
             $query->where(function (Builder $builder) use ($search) {
@@ -56,7 +59,8 @@ class ServiceController extends Controller
 
     public function info(Request $request, ServiceOrder $service)
     {
-        $service = $this->findVisibleServiceOrder($request, $service->id);
+        $service = $this->findVisibleServiceOrder($request, $service->id)
+            ->load('serviceReview');
         $payload = $this->buildServicePayload($service);
         $serviceJson = json_encode(
             $payload,
@@ -142,6 +146,17 @@ class ServiceController extends Controller
             'reviewName' => $service->reviewName,
             'timeSpent' => $service->timeSpent,
             'localStatus' => $service->local_status,
+            'review' => $service->serviceReview?->only([
+                'id',
+                'info_usefulness',
+                'usability',
+                'video_content',
+                'video_image',
+                'video_sound',
+                'video_duration',
+                'comment',
+                'created_at',
+            ]),
             'defects' => $service->defects ?? null,
         ];
     }

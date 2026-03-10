@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ServiceOrderReview extends Model
 {
@@ -20,8 +21,13 @@ class ServiceOrderReview extends Model
     /**
      * Один отзыв принадлежит одному заказу
      */
-    public function order()
+    public function serviceOrder(): BelongsTo
     {
-        return $this->belongsTo(Order::class);
+        return $this->belongsTo(ServiceOrder::class, 'order_id');
+    }
+
+    public function order(): BelongsTo
+    {
+        return $this->serviceOrder();
     }
 }

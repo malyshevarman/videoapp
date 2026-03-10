@@ -21,6 +21,7 @@
         $requester = is_array($payload['requester'] ?? null) ? $payload['requester'] : [];
         $responsible = is_array($payload['responsibleEmployee'] ?? null) ? $payload['responsibleEmployee'] : [];
         $defects = is_array($payload['defects'] ?? null) ? $payload['defects'] : [];
+        $review = is_array($payload['review'] ?? null) ? $payload['review'] : [];
 
         $personName = function (array $data): string {
             $keys = ['customerLastName', 'customerFirstName', 'customerMidName', 'specialistLastName', 'specialistFirstName', 'specialistMidName', 'specialistMiddleName'];
@@ -89,7 +90,7 @@
             <div class="card-header">
                 <div class="d-flex flex-wrap align-items-center justify-content-between" style="gap: 12px;">
                     <div>
-                      <div class="text-muted small">
+                        <div class="text-muted small">
                             Внутренний ID: {{ $service->id }}
                             @if($payload['processStatus'] ?? null) | Статус: {{ $payload['processStatus'] }} @endif
                         </div>
@@ -131,6 +132,7 @@
                                 <tr><th>systemId</th><td>{{ $payload['systemId'] ?? '—' }}</td></tr>
                                 <tr><th>reviewTemplateId</th><td>{{ $payload['reviewTemplateId'] ?? '—' }}</td></tr>
                                 <tr><th>timeSpent</th><td>{{ $payload['timeSpent'] ?? 0 }}</td></tr>
+                                <tr><th>Локальный статус</th><td>{{ $payload['localStatus'] ?? '—' }}</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -159,7 +161,6 @@
                                 <tr><th>Страна номера</th><td>{{ $survey['carLicensePlateCountry'] ?? '—' }}</td></tr>
                                 <tr><th>Топливо</th><td>{{ $survey['carFuel'] ?? '—' }}</td></tr>
                                 <tr><th>carId</th><td>{{ $survey['carId'] ?? '—' }}</td></tr>
-
                                 </tbody>
                             </table>
                         </div>
@@ -198,7 +199,7 @@
                                 <tr><th>Внешний ид</th><td>{{ $responsible['internalId'] ?? '—' }}</td></tr>
                                 <tr><th>Ид категории</th><td>{{ $responsible['idCategory'] ?? '—' }}</td></tr>
                                 <tr><th>Тип специалиста</th><td>{{ $responsible['specialistType'] ?? '—' }}</td></tr>
-                               </tbody>
+                                </tbody>
                             </table>
                         </div>
 
@@ -211,8 +212,7 @@
                                 <tr><th>Телефон</th><td>{{ $driver['customerPhone'] ?? '—' }}</td></tr>
                                 <tr><th>Email</th><td>{{ $driver['customerEmail'] ?? '—' }}</td></tr>
                                 <tr><th>Адрес</th><td>{{ $driver['customerAddress'] ?? '—' }}</td></tr>
-
-                               </tbody>
+                                </tbody>
                             </table>
                         </div>
 
@@ -349,7 +349,6 @@
                                                 <td>{{ $record['id'] ?? '—' }}</td>
                                                 <td>{{ $record['status'] ?? '—' }}</td>
                                                 <td>{{ $fmt($record['timestamp'] ?? null) }}</td>
-
                                             </tr>
                                         @endforeach
                                         </tbody>
@@ -360,7 +359,27 @@
                             @endif
                         </div>
 
-
+                        <div class="info-panel">
+                            <h5 class="info-panel__title">Отзыв клиента</h5>
+                            @if(!empty($review))
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-borderless info-table mb-0">
+                                        <tbody>
+                                        <tr><th>Полезность информации</th><td>{{ $review['info_usefulness'] ?? '—' }}</td></tr>
+                                        <tr><th>Удобство использования</th><td>{{ $review['usability'] ?? '—' }}</td></tr>
+                                        <tr><th>Содержание видео</th><td>{{ $review['video_content'] ?? '—' }}</td></tr>
+                                        <tr><th>Изображение</th><td>{{ $review['video_image'] ?? '—' }}</td></tr>
+                                        <tr><th>Звук</th><td>{{ $review['video_sound'] ?? '—' }}</td></tr>
+                                        <tr><th>Длительность</th><td>{{ $review['video_duration'] ?? '—' }}</td></tr>
+                                        <tr><th>Комментарий</th><td>{{ $review['comment'] ?? 'Без комментария' }}</td></tr>
+                                        <tr><th>Создан</th><td>{{ $fmt($review['created_at'] ?? null) }}</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            @else
+                                <div class="text-muted">Отзыв еще не оставлен.</div>
+                            @endif
+                        </div>
                     </div>
                 </div>
 

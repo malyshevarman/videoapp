@@ -58,6 +58,7 @@
                                 <th>ID заказа</th>
                                 <th>Клиент</th>
                                 <th>Статус</th>
+                                <th>Отзыв</th>
                                 <th>Public URL</th>
                                 <th>Создан</th>
                                 <th class="text-right">Действия</th>
@@ -71,6 +72,12 @@
                                     $firstName = trim((string) ($order->client['customerFirstName'] ?? $order->client['firstName'] ?? ''));
                                     $lastName = trim((string) ($order->client['customerLastName'] ?? $order->client['lastName'] ?? ''));
                                     $fullName = trim($firstName . ' ' . $lastName);
+                                    $review = $order->serviceReview;
+                                    $reviewAverage = $review
+                                        ? collect([$review->info_usefulness, $review->usability, $review->video_content, $review->video_image, $review->video_sound, $review->video_duration])
+                                            ->filter(fn ($value) => $value !== null)
+                                            ->avg()
+                                        : null;
                                 @endphp
                                 <tr>
                                     <td>
@@ -82,6 +89,19 @@
                                     </td>
                                     <td>
                                         <span class="badge {{ $status['class'] }} px-2 py-1">{{ $status['label'] }}</span>
+                                    </td>
+                                    <td>
+                                        @if($review)
+                                            <div class="service-review-badge">
+                                                <span>{{ $reviewAverage !== null ? number_format((float) $reviewAverage, 1, ',', ' ') : '—' }}</span>
+                                                <small>/ 5</small>
+                                            </div>
+                                            <div class="text-muted small mt-1 service-review-text">
+                                                {{ $review->comment ? \Illuminate\Support\Str::limit($review->comment, 90) : 'Без комментария' }}
+                                            </div>
+                                        @else
+                                            <span class="text-muted small">Нет отзыва</span>
+                                        @endif
                                     </td>
                                     <td>
                                         @if($order->public_url)
@@ -171,6 +191,23 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
+        }
+
+        .service-review-badge {
+            display: inline-flex;
+            align-items: baseline;
+            gap: 4px;
+            padding: 3px 10px;
+            border-radius: 999px;
+            background: #fffbeb;
+            color: #a16207;
+            font-weight: 700;
+        }
+
+        .service-review-text {
+            max-width: 240px;
+            white-space: pre-wrap;
+            word-break: break-word;
         }
 
         @media (max-width: 768px) {
