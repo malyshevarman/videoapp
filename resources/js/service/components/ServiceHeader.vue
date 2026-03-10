@@ -89,7 +89,7 @@ defineProps({
 
 
                     <div class="top__links">
-                        <div class="top__links-title">Первичный осмотр:</div>
+                     <!--   <div class="top__links-title">Первичный осмотр:</div>
 
                         <a class="top__link" href="#">
                 <span class="top__link-ic" aria-hidden="true">
@@ -112,6 +112,7 @@ defineProps({
                 </span>
                             Результат проверки автомобиля
                         </a>
+                        -->
                     </div>
 
 

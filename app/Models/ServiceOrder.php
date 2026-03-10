@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -121,6 +123,27 @@ class ServiceOrder extends Model implements HasMedia
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function dealer(): BelongsTo
+    {
+        return $this->belongsTo(Dealer::class, 'dealerCode', 'external_id');
+    }
+
+    public function scopeVisibleToUser(Builder $query, User $user): Builder
+    {
+        $dealerExternalIds = $user->dealers()
+            ->whereNotNull('external_id')
+            ->pluck('external_id')
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($dealerExternalIds->isEmpty()) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->whereIn('dealerCode', $dealerExternalIds->all());
     }
 
     public function mechanic()

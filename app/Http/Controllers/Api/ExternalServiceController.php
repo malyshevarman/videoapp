@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Storage;
 use FFMpeg\FFMpeg;
 use FFMpeg\Coordinate\TimeCode;
 use Illuminate\Support\Str;
+use OpenApi\Annotations as OA;
 use Symfony\Component\Process\Process;
 
 class ExternalServiceController extends Controller
@@ -144,6 +145,208 @@ class ExternalServiceController extends Controller
 
     /**
      * Store a newly created resource in storage.
+     *
+     * @OA\Post(
+     *     path="/api/services",
+     *     operationId="storeExternalServiceOrder",
+     *     tags={"External Services"},
+     *     security={{"bearerAuth":{}}},
+     *     summary="Создать или обновить заказ-наряд из внешней системы",
+     *     description="Метод принимает заказ-наряд, работы, детали, клиента, автомобиль и статусы процесса. Если заказ с referenceObject.orderId уже существует, запись обновляется. При обновлении внутренние поля processStatusRecords, processStatus и defects не перезаписываются внешним API.",
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"referenceObject"},
+     *             @OA\Property(
+     *                 property="referenceObject",
+     *                 type="object",
+     *                 description="Основной идентификатор и метаданные заказ-наряда во внешней системе.",
+     *                 required={"orderId"},
+     *                 @OA\Property(property="orderId", type="string", description="Идентификатор заказ-наряда во внешней системе.", example="2000057940"),
+     *                 @OA\Property(property="orderBarcode", type="string", nullable=true, description="Штрихкод заказ-наряда.", example="0020000579405"),
+     *                 @OA\Property(property="orderCategory", type="string", nullable=true, description="Категория заказа.", example="serviceOrder"),
+     *                 @OA\Property(property="orderType", type="string", nullable=true, description="Тип заказа."),
+     *                 @OA\Property(property="orderWorkType", type="string", nullable=true, description="Тип работ.", example="ISER"),
+     *                 @OA\Property(property="orderAmountExVat", type="number", format="float", nullable=true, description="Сумма без НДС.", example=0),
+     *                 @OA\Property(property="orderAmountIncVat", type="number", format="float", nullable=true, description="Сумма с НДС.", example=0),
+     *                 @OA\Property(property="currencyCode", type="string", nullable=true, description="Код валюты.", example="RUB"),
+     *                 @OA\Property(property="orderClosed", type="boolean", nullable=true, description="Признак закрытого заказа.", example=false)
+     *             ),
+     *             @OA\Property(property="siteId", type="string", nullable=true, description="Код площадки или филиала.", example="5070"),
+     *             @OA\Property(property="locationCode", type="string", nullable=true, description="Код локации.", example="L14"),
+     *             @OA\Property(property="reviewCategory", type="string", nullable=true, description="Категория осмотра.", example="VideoCapture"),
+     *             @OA\Property(property="changeTimeStamp", type="string", format="date-time", nullable=true, description="Время последнего изменения данных во внешней системе.", example="2026-03-10T09:44:28.000000Z"),
+     *             @OA\Property(property="closed", type="boolean", nullable=true, description="Признак закрытия карточки осмотра.", example=false),
+     *             @OA\Property(property="completed", type="boolean", nullable=true, description="Признак завершения осмотра.", example=false),
+     *             @OA\Property(property="completionTimeStamp", type="string", format="date-time", nullable=true, description="Дата и время завершения осмотра.", example="1970-01-01T00:00:00.000000Z"),
+     *             @OA\Property(property="creationTimestamp", type="string", format="date-time", nullable=true, description="Дата и время создания осмотра.", example="2026-03-10T08:14:04.000000Z"),
+     *             @OA\Property(property="dealerCode", type="string", nullable=true, description="Код дилера."),
+     *             @OA\Property(property="hasSurveyRefs", type="boolean", nullable=true, description="Есть ли ссылки на связанные осмотры.", example=false),
+     *             @OA\Property(property="reviewId", type="string", nullable=true, description="Идентификатор осмотра во внешней системе."),
+     *             @OA\Property(property="visitStartTime", type="string", format="date-time", nullable=true, description="Дата и время начала визита.", example="2026-03-10T05:00:00.000000Z"),
+     *             @OA\Property(property="processStatus", type="string", nullable=true, description="Текущий статус процесса согласования.", example="approvalLinkOpened"),
+     *             @OA\Property(property="reviewType", type="string", nullable=true, description="Тип осмотра.", example="VC"),
+     *             @OA\Property(property="systemId", type="string", nullable=true, description="Код внешней системы.", example="ERD"),
+     *             @OA\Property(property="reviewTemplateId", type="string", nullable=true, description="Идентификатор шаблона осмотра."),
+     *             @OA\Property(property="reviewName", type="string", nullable=true, description="Название осмотра."),
+     *             @OA\Property(property="timeSpent", type="integer", nullable=true, description="Затраченное время в условных единицах.", example=0),
+     *             @OA\Property(
+     *                 property="tasks",
+     *                 type="array",
+     *                 description="Список работ или задач по заказ-наряду.",
+     *                 @OA\Items(
+     *                     type="object",
+     *                     @OA\Property(property="taskId", type="string", description="Идентификатор задачи.", example="3"),
+     *                     @OA\Property(property="taskName", type="string", description="Название задачи.", example="Название 1 зел"),
+     *                     @OA\Property(property="customerApproved", type="string", nullable=true, description="Решение клиента по работе.", example="rejected"),
+     *                     @OA\Property(property="deferredTaskDate", type="string", nullable=true, description="Дата переноса выполнения, если есть.", example="")
+     *                 )
+     *             ),
+     *             @OA\Property(
+     *                 property="details",
+     *                 type="array",
+     *                 description="Детализация работ и материалов по задачам.",
+     *                 @OA\Items(type="object", additionalProperties=true)
+     *             ),
+     *             @OA\Property(
+     *                 property="processStatusRecords",
+     *                 type="array",
+     *                 description="История изменения статусов процесса.",
+     *                 @OA\Items(
+     *                     type="object",
+     *                     @OA\Property(property="id", type="string", format="uuid", description="UUID записи статуса."),
+     *                     @OA\Property(property="status", type="string", description="Код статуса процесса.", example="surveyCompleted"),
+     *                     @OA\Property(property="timestamp", type="string", format="date-time", description="Время фиксации статуса.")
+     *                 )
+     *             ),
+     *             @OA\Property(property="client", type="object", nullable=true, description="Данные клиента.", additionalProperties=true),
+     *             @OA\Property(property="carDriver", type="object", nullable=true, description="Данные водителя.", additionalProperties=true),
+     *             @OA\Property(property="carOwner", type="object", nullable=true, description="Данные владельца автомобиля.", additionalProperties=true),
+     *             @OA\Property(property="surveyObject", type="object", nullable=true, description="Данные автомобиля и объекта осмотра.", additionalProperties=true),
+     *             @OA\Property(property="requester", type="object", nullable=true, description="Сотрудник, инициировавший осмотр.", additionalProperties=true),
+     *             @OA\Property(property="responsibleEmployee", type="object", nullable=true, description="Ответственный сотрудник.", additionalProperties=true),
+     *             @OA\Property(
+     *                 property="defects",
+     *                 type="array",
+     *                 description="Список дефектов, привязанных к видео и задачам.",
+     *                 @OA\Items(
+     *                     type="object",
+     *                     @OA\Property(property="id", type="string", description="Идентификатор дефекта.", example="3"),
+     *                     @OA\Property(property="time", type="number", format="float", nullable=true, description="Временная отметка на видео в секундах.", example=3),
+     *                     @OA\Property(property="title", type="string", description="Название дефекта.", example="Название 1 зел"),
+     *                     @OA\Property(property="status", type="string", nullable=true, description="Цветовой статус дефекта.", example="green"),
+     *                     @OA\Property(property="customerApproved", type="string", nullable=true, description="Решение клиента по дефекту."),
+     *                     @OA\Property(property="deferredTaskDate", type="string", nullable=true, description="Дата переноса устранения дефекта.")
+     *                 )
+     *             ),
+     *             example={
+     *                 "referenceObject": {
+     *                     "orderId": "2000057940",
+     *                     "orderBarcode": "0020000579405",
+     *                     "orderCategory": "serviceOrder",
+     *                     "orderType": null,
+     *                     "orderWorkType": "ISER",
+     *                     "orderAmountExVat": 0,
+     *                     "orderAmountIncVat": 0,
+     *                     "currencyCode": "RUB",
+     *                     "orderClosed": false
+     *                 },
+     *                 "siteId": "5070",
+     *                 "locationCode": "L14",
+     *                 "reviewCategory": "VideoCapture",
+     *                 "changeTimeStamp": "2026-03-10T09:44:28.000000Z",
+     *                 "closed": false,
+     *                 "completed": false,
+     *                 "completionTimeStamp": "1970-01-01T00:00:00.000000Z",
+     *                 "tasks": {
+     *                     {"taskId": "0", "taskName": "Свободн. позиции", "customerApproved": null, "deferredTaskDate": null},
+     *                     {"taskId": "1", "taskName": "Диагностика АМ при подкл. к Пакетному ТО", "customerApproved": null, "deferredTaskDate": null},
+     *                     {"taskId": "3", "taskName": "Название 1 зел", "customerApproved": "rejected", "deferredTaskDate": ""},
+     *                     {"taskId": "4", "taskName": "Название 2 жел", "customerApproved": "approved", "deferredTaskDate": ""},
+     *                     {"taskId": "5", "taskName": "Название 3 крас", "customerApproved": "rejected", "deferredTaskDate": ""},
+     *                     {"taskId": "2", "taskName": "Название 1 зел", "customerApproved": null, "deferredTaskDate": null}
+     *                 },
+     *                 "details": {
+     *                     {"taskId": "0", "category": "start", "answerSigned": false, "text": null, "lineId": null, "positionType": null, "idLabourCatalogue": null, "positionCode": null, "positionName": null, "positionMaterialGroup": null, "positionQuantity": 0, "positionMeasure": null, "positionDiscountPercent": 0, "positionAmountExVat": 0, "positionAmountIncVat": 0},
+     *                     {"taskId": "1", "category": "start", "answerSigned": false, "text": null, "lineId": "10", "positionType": "labour", "idLabourCatalogue": "TRADE_IN", "positionCode": "DMS01-001", "positionName": "Диагностика АМ при подкл. к Пакетному ТО", "positionMaterialGroup": "11000", "positionQuantity": 2, "positionMeasure": "STD", "positionDiscountPercent": 0, "positionAmountExVat": 0, "positionAmountIncVat": 0}
+     *                 },
+     *                 "creationTimestamp": "2026-03-10T08:14:04.000000Z",
+     *                 "client": {"customerType": "person", "customerId": "0070012718", "customerFirstName": "Андрей", "customerMidName": "Вениаминович", "customerLastName": "Сильянов", "customerPhone": "9772686902", "customerAddress": "Россия, 142167, г. Москва, д. Петрово, тер. СНТ Петрово, д. 1, кв. 1", "customerEmail": "asilyanov1568@gmail.com", "customerTGId": null, "customerContactAllowed": false},
+     *                 "carDriver": {"customerType": "person", "customerId": "0070012718", "customerFirstName": "Андрей", "customerMidName": "Вениаминович", "customerLastName": "Сильянов", "customerPhone": "9772686902", "customerAddress": "Россия, 142167, г. Москва, д. Петрово, тер. СНТ Петрово, д. 1, кв. 1", "customerEmail": "asilyanov1568@gmail.com", "customerTGId": null, "customerContactAllowed": false},
+     *                 "carOwner": {"customerType": "person", "customerId": "0070012718", "customerFirstName": "Андрей", "customerMidName": "Вениаминович", "customerLastName": "Сильянов", "customerPhone": "9772686902", "customerAddress": "Россия, 142167, г. Москва, д. Петрово, тер. СНТ Петрово, д. 1, кв. 1", "customerEmail": "asilyanov1568@gmail.com", "customerTGId": null, "customerContactAllowed": false},
+     *                 "surveyObject": {"car": null, "carId": "051Mfq8T7z2ofqPmjEO7HG", "carBrand": "BMW", "carModel": "5 SERIES", "carModelCode": "5 SERIES", "carVin": "JTMABABJ104006969", "carLicensePlate": "В555ВВ777", "carLicensePlateCountry": "RU", "carFuel": "Бензин", "keyForCatalogOfWorks": "*"},
+     *                 "requester": {"category": "person", "specialistId": "00013163", "specialistFirstName": "Дмитрий", "specialistMidName": "Александрович", "specialistLastName": "Серпуховитин", "systemsUserId": "RUADSERPUKHO", "customerContactAllowed": true},
+     *                 "dealerCode": null,
+     *                 "hasSurveyRefs": false,
+     *                 "reviewId": null,
+     *                 "visitStartTime": "2026-03-10T05:00:00.000000Z",
+     *                 "processStatus": "approvalLinkOpened",
+     *                 "processStatusRecords": {
+     *                     {"id": "27bb8699-b905-4b14-b2f4-91bfc47ad554", "status": "surveyCompleted", "timestamp": "2026-03-10T08:33:30.269659Z"},
+     *                     {"id": "c7b6d6f9-21ed-49cb-87ee-446731ff93ca", "status": "quotesCreated", "timestamp": "2026-03-10T08:35:30.855196Z"},
+     *                     {"id": "39c70915-9cbc-44ae-8021-68f37ab9aa67", "status": "approvalLinkSent", "timestamp": "2026-03-10T09:51:07.929521Z"},
+     *                     {"id": "56bea9a1-e39a-41cc-9467-da93913fe844", "status": "approvalLinkOpened", "timestamp": "2026-03-10T09:51:09.896353Z"}
+     *                 },
+     *                 "reviewType": "VC",
+     *                 "responsibleEmployee": {"specialistType": null, "specialistId": null, "idCategory": null, "internalId": null, "specialistFirstName": null, "specialistMiddleName": null, "specialistLastName": null, "contactAllowed": false},
+     *                 "systemId": "ERD",
+     *                 "reviewTemplateId": null,
+     *                 "reviewName": null,
+     *                 "timeSpent": 0,
+     *
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Заказ-наряд успешно создан или обновлён",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="referenceObject", type="object", additionalProperties=true),
+     *             @OA\Property(property="tasks", type="array", nullable=true, @OA\Items(type="object", additionalProperties=true)),
+     *             @OA\Property(property="details", type="array", nullable=true, @OA\Items(type="object", additionalProperties=true)),
+     *             @OA\Property(property="processStatusRecords", type="array", nullable=true, @OA\Items(type="object", additionalProperties=true)),
+     *             @OA\Property(property="client", type="object", nullable=true, additionalProperties=true),
+     *             @OA\Property(property="carDriver", type="object", nullable=true, additionalProperties=true),
+     *             @OA\Property(property="carOwner", type="object", nullable=true, additionalProperties=true),
+     *             @OA\Property(property="surveyObject", type="object", nullable=true, additionalProperties=true),
+     *             @OA\Property(property="requester", type="object", nullable=true, additionalProperties=true),
+     *             @OA\Property(property="responsibleEmployee", type="object", nullable=true, additionalProperties=true),
+     *             @OA\Property(property="siteId", type="string", nullable=true),
+     *             @OA\Property(property="locationCode", type="string", nullable=true),
+     *             @OA\Property(property="reviewCategory", type="string", nullable=true),
+     *             @OA\Property(property="changeTimeStamp", type="string", format="date-time", nullable=true),
+     *             @OA\Property(property="closed", type="boolean"),
+     *             @OA\Property(property="completed", type="boolean"),
+     *             @OA\Property(property="completionTimeStamp", type="string", format="date-time", nullable=true),
+     *             @OA\Property(property="creationTimestamp", type="string", format="date-time", nullable=true),
+     *             @OA\Property(property="dealerCode", type="string", nullable=true),
+     *             @OA\Property(property="hasSurveyRefs", type="boolean"),
+     *             @OA\Property(property="reviewId", type="string", nullable=true),
+     *             @OA\Property(property="visitStartTime", type="string", format="date-time", nullable=true),
+     *             @OA\Property(property="processStatus", type="string", nullable=true),
+     *             @OA\Property(property="reviewType", type="string", nullable=true),
+     *             @OA\Property(property="systemId", type="string", nullable=true),
+     *             @OA\Property(property="reviewTemplateId", type="string", nullable=true),
+     *             @OA\Property(property="reviewName", type="string", nullable=true),
+     *             @OA\Property(property="timeSpent", type="integer")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Отсутствует или неверный Bearer token",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Invalid bearer token.")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Ошибка валидации входных данных",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="errors", type="object", additionalProperties=true),
+     *             example={"errors": {"referenceObject": {"Поле referenceObject обязательно для заполнения."}}}
+     *         )
+     *     )
+     * )
      */
     public function store(Request $request): JsonResponse
     {

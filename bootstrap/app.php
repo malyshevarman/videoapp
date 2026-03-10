@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin' => App\Http\Middleware\AdminMiddleware::class,
             'admin_only' => App\Http\Middleware\AdminOnlyMiddleware::class,
+            'api.bearer' => App\Http\Middleware\ApiBearerTokenMiddleware::class,
         ]);
 
     })

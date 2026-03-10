@@ -1,51 +1,62 @@
 <?php
-namespace App\Http\Controllers;
 
 namespace App\Http\Controllers;
+
 use App\Models\ServiceOrder;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 
 class ServiceController extends Controller
 {
     public function index(Request $request)
     {
-        $query = ServiceOrder::select(
+        $search = trim((string) $request->input('table_search'));
+
+        $query = $this->visibleServiceOrdersQuery($request)->select(
             'id',
             'public_url',
             'processStatus',
             'order_id',
             'created_at',
-            'client'
+            'client',
+            'dealerCode'
         );
 
-        // Проверяем, есть ли поиск
-        if ($search = $request->input('table_search')) {
-            $query->where('order_id', 'like', "%{$search}%")
-                ->orWhereJsonContains('client->firstName', $search)
-                ->orWhereJsonContains('client->lastName', $search);
+        if ($search !== '') {
+            $query->where(function (Builder $builder) use ($search) {
+                $builder->where('order_id', 'like', "%{$search}%")
+                    ->orWhere('dealerCode', 'like', "%{$search}%")
+                    ->orWhere('client->customerFirstName', 'like', "%{$search}%")
+                    ->orWhere('client->customerLastName', 'like', "%{$search}%")
+                    ->orWhere('client->firstName', 'like', "%{$search}%")
+                    ->orWhere('client->lastName', 'like', "%{$search}%");
+            });
         }
 
-        $orders = $query->orderBy('created_at', 'desc')
+        $orders = $query->orderByDesc('created_at')
             ->paginate(10)
-            ->appends(['table_search' => $search]); // сохраняем параметр поиска при пагинации
+            ->appends(['table_search' => $search]);
 
         return view('admin.services.index', compact('orders'));
     }
 
-    public function edit($id)
+    public function edit(Request $request, int|string $id)
     {
-        $service = ServiceOrder::findOrFail($id);
+        $service = $this->findVisibleServiceOrder($request, $id);
+
         return view('admin.services.edit', compact('service'));
     }
 
-    public function video($id)
+    public function video(Request $request, int|string $id)
     {
-        $service = ServiceOrder::findOrFail($id);
+        $service = $this->findVisibleServiceOrder($request, $id);
+
         return view('admin.services.video', compact('service'));
     }
 
-    public function info(ServiceOrder $service)
+    public function info(Request $request, ServiceOrder $service)
     {
+        $service = $this->findVisibleServiceOrder($request, $service->id);
         $payload = $this->buildServicePayload($service);
         $serviceJson = json_encode(
             $payload,
@@ -59,9 +70,9 @@ class ServiceController extends Controller
         ]);
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, int|string $id)
     {
-        $service = Service::findOrFail($id);
+        $service = $this->findVisibleServiceOrder($request, $id);
 
         $request->validate([
             'name' => 'required|string|max:255',
@@ -74,13 +85,23 @@ class ServiceController extends Controller
             ->with('success', 'Service updated successfully');
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, int|string $id)
     {
-        $service = Service::findOrFail($id);
+        $service = $this->findVisibleServiceOrder($request, $id);
         $service->delete();
 
         return redirect()->route('admin.services.index')
             ->with('success', 'Service deleted successfully');
+    }
+
+    private function visibleServiceOrdersQuery(Request $request): Builder
+    {
+        return ServiceOrder::query()->visibleToUser($request->user());
+    }
+
+    private function findVisibleServiceOrder(Request $request, int|string $id): ServiceOrder
+    {
+        return $this->visibleServiceOrdersQuery($request)->findOrFail($id);
     }
 
     private function buildServicePayload(ServiceOrder $service): array

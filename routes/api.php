@@ -2,4 +2,6 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\ExternalServiceController;
 
-Route::post('/services', [ExternalServiceController::class, 'store']);
+Route::middleware('api.bearer')->group(function () {
+    Route::post('/services', [ExternalServiceController::class, 'store']);
+});

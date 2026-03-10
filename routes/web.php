@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\DealerController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\Api\ExternalServiceController;
@@ -54,6 +55,9 @@ Route::middleware(['auth', 'admin'])
 
             Route::resource('dealers', DealerController::class)
                 ->except(['show']);
+
+            Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
+            Route::post('settings/token/regenerate', [SettingsController::class, 'regenerateToken'])->name('settings.token.regenerate');
         });
 
     });

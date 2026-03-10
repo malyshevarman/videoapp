@@ -1,0 +1,751 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "API VideoApp",
+        "description": "Документация API для интеграции с внешними системами.",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://127.0.0.1:8000",
+            "description": "Основной сервер API"
+        }
+    ],
+    "paths": {
+        "/api/services": {
+            "post": {
+                "tags": [
+                    "External Services"
+                ],
+                "summary": "Создать или обновить заказ-наряд из внешней системы",
+                "description": "Метод принимает заказ-наряд, работы, детали, клиента, автомобиль и статусы процесса. Если заказ с referenceObject.orderId уже существует, запись обновляется. При обновлении внутренние поля processStatusRecords, processStatus и defects не перезаписываются внешним API.",
+                "operationId": "storeExternalServiceOrder",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "referenceObject"
+                                ],
+                                "properties": {
+                                    "referenceObject": {
+                                        "description": "Основной идентификатор и метаданные заказ-наряда во внешней системе.",
+                                        "required": [
+                                            "orderId"
+                                        ],
+                                        "properties": {
+                                            "orderId": {
+                                                "description": "Идентификатор заказ-наряда во внешней системе.",
+                                                "type": "string",
+                                                "example": "2000057940"
+                                            },
+                                            "orderBarcode": {
+                                                "description": "Штрихкод заказ-наряда.",
+                                                "type": "string",
+                                                "example": "0020000579405",
+                                                "nullable": true
+                                            },
+                                            "orderCategory": {
+                                                "description": "Категория заказа.",
+                                                "type": "string",
+                                                "example": "serviceOrder",
+                                                "nullable": true
+                                            },
+                                            "orderType": {
+                                                "description": "Тип заказа.",
+                                                "type": "string",
+                                                "nullable": true
+                                            },
+                                            "orderWorkType": {
+                                                "description": "Тип работ.",
+                                                "type": "string",
+                                                "example": "ISER",
+                                                "nullable": true
+                                            },
+                                            "orderAmountExVat": {
+                                                "description": "Сумма без НДС.",
+                                                "type": "number",
+                                                "format": "float",
+                                                "example": 0,
+                                                "nullable": true
+                                            },
+                                            "orderAmountIncVat": {
+                                                "description": "Сумма с НДС.",
+                                                "type": "number",
+                                                "format": "float",
+                                                "example": 0,
+                                                "nullable": true
+                                            },
+                                            "currencyCode": {
+                                                "description": "Код валюты.",
+                                                "type": "string",
+                                                "example": "RUB",
+                                                "nullable": true
+                                            },
+                                            "orderClosed": {
+                                                "description": "Признак закрытого заказа.",
+                                                "type": "boolean",
+                                                "example": false,
+                                                "nullable": true
+                                            }
+                                        },
+                                        "type": "object"
+                                    },
+                                    "siteId": {
+                                        "description": "Код площадки или филиала.",
+                                        "type": "string",
+                                        "example": "5070",
+                                        "nullable": true
+                                    },
+                                    "locationCode": {
+                                        "description": "Код локации.",
+                                        "type": "string",
+                                        "example": "L14",
+                                        "nullable": true
+                                    },
+                                    "reviewCategory": {
+                                        "description": "Категория осмотра.",
+                                        "type": "string",
+                                        "example": "VideoCapture",
+                                        "nullable": true
+                                    },
+                                    "changeTimeStamp": {
+                                        "description": "Время последнего изменения данных во внешней системе.",
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "example": "2026-03-10T09:44:28.000000Z",
+                                        "nullable": true
+                                    },
+                                    "closed": {
+                                        "description": "Признак закрытия карточки осмотра.",
+                                        "type": "boolean",
+                                        "example": false,
+                                        "nullable": true
+                                    },
+                                    "completed": {
+                                        "description": "Признак завершения осмотра.",
+                                        "type": "boolean",
+                                        "example": false,
+                                        "nullable": true
+                                    },
+                                    "completionTimeStamp": {
+                                        "description": "Дата и время завершения осмотра.",
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "example": "1970-01-01T00:00:00.000000Z",
+                                        "nullable": true
+                                    },
+                                    "creationTimestamp": {
+                                        "description": "Дата и время создания осмотра.",
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "example": "2026-03-10T08:14:04.000000Z",
+                                        "nullable": true
+                                    },
+                                    "dealerCode": {
+                                        "description": "Код дилера.",
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "hasSurveyRefs": {
+                                        "description": "Есть ли ссылки на связанные осмотры.",
+                                        "type": "boolean",
+                                        "example": false,
+                                        "nullable": true
+                                    },
+                                    "reviewId": {
+                                        "description": "Идентификатор осмотра во внешней системе.",
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "visitStartTime": {
+                                        "description": "Дата и время начала визита.",
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "example": "2026-03-10T05:00:00.000000Z",
+                                        "nullable": true
+                                    },
+                                    "processStatus": {
+                                        "description": "Текущий статус процесса согласования.",
+                                        "type": "string",
+                                        "example": "approvalLinkOpened",
+                                        "nullable": true
+                                    },
+                                    "reviewType": {
+                                        "description": "Тип осмотра.",
+                                        "type": "string",
+                                        "example": "VC",
+                                        "nullable": true
+                                    },
+                                    "systemId": {
+                                        "description": "Код внешней системы.",
+                                        "type": "string",
+                                        "example": "ERD",
+                                        "nullable": true
+                                    },
+                                    "reviewTemplateId": {
+                                        "description": "Идентификатор шаблона осмотра.",
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "reviewName": {
+                                        "description": "Название осмотра.",
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "timeSpent": {
+                                        "description": "Затраченное время в условных единицах.",
+                                        "type": "integer",
+                                        "example": 0,
+                                        "nullable": true
+                                    },
+                                    "tasks": {
+                                        "description": "Список работ или задач по заказ-наряду.",
+                                        "type": "array",
+                                        "items": {
+                                            "properties": {
+                                                "taskId": {
+                                                    "description": "Идентификатор задачи.",
+                                                    "type": "string",
+                                                    "example": "3"
+                                                },
+                                                "taskName": {
+                                                    "description": "Название задачи.",
+                                                    "type": "string",
+                                                    "example": "Название 1 зел"
+                                                },
+                                                "customerApproved": {
+                                                    "description": "Решение клиента по работе.",
+                                                    "type": "string",
+                                                    "example": "rejected",
+                                                    "nullable": true
+                                                },
+                                                "deferredTaskDate": {
+                                                    "description": "Дата переноса выполнения, если есть.",
+                                                    "type": "string",
+                                                    "example": "",
+                                                    "nullable": true
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "details": {
+                                        "description": "Детализация работ и материалов по задачам.",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "additionalProperties": true
+                                        }
+                                    },
+                                    "processStatusRecords": {
+                                        "description": "История изменения статусов процесса.",
+                                        "type": "array",
+                                        "items": {
+                                            "properties": {
+                                                "id": {
+                                                    "description": "UUID записи статуса.",
+                                                    "type": "string",
+                                                    "format": "uuid"
+                                                },
+                                                "status": {
+                                                    "description": "Код статуса процесса.",
+                                                    "type": "string",
+                                                    "example": "surveyCompleted"
+                                                },
+                                                "timestamp": {
+                                                    "description": "Время фиксации статуса.",
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "client": {
+                                        "description": "Данные клиента.",
+                                        "type": "object",
+                                        "nullable": true,
+                                        "additionalProperties": true
+                                    },
+                                    "carDriver": {
+                                        "description": "Данные водителя.",
+                                        "type": "object",
+                                        "nullable": true,
+                                        "additionalProperties": true
+                                    },
+                                    "carOwner": {
+                                        "description": "Данные владельца автомобиля.",
+                                        "type": "object",
+                                        "nullable": true,
+                                        "additionalProperties": true
+                                    },
+                                    "surveyObject": {
+                                        "description": "Данные автомобиля и объекта осмотра.",
+                                        "type": "object",
+                                        "nullable": true,
+                                        "additionalProperties": true
+                                    },
+                                    "requester": {
+                                        "description": "Сотрудник, инициировавший осмотр.",
+                                        "type": "object",
+                                        "nullable": true,
+                                        "additionalProperties": true
+                                    },
+                                    "responsibleEmployee": {
+                                        "description": "Ответственный сотрудник.",
+                                        "type": "object",
+                                        "nullable": true,
+                                        "additionalProperties": true
+                                    },
+                                    "defects": {
+                                        "description": "Список дефектов, привязанных к видео и задачам.",
+                                        "type": "array",
+                                        "items": {
+                                            "properties": {
+                                                "id": {
+                                                    "description": "Идентификатор дефекта.",
+                                                    "type": "string",
+                                                    "example": "3"
+                                                },
+                                                "time": {
+                                                    "description": "Временная отметка на видео в секундах.",
+                                                    "type": "number",
+                                                    "format": "float",
+                                                    "example": 3,
+                                                    "nullable": true
+                                                },
+                                                "title": {
+                                                    "description": "Название дефекта.",
+                                                    "type": "string",
+                                                    "example": "Название 1 зел"
+                                                },
+                                                "status": {
+                                                    "description": "Цветовой статус дефекта.",
+                                                    "type": "string",
+                                                    "example": "green",
+                                                    "nullable": true
+                                                },
+                                                "customerApproved": {
+                                                    "description": "Решение клиента по дефекту.",
+                                                    "type": "string",
+                                                    "nullable": true
+                                                },
+                                                "deferredTaskDate": {
+                                                    "description": "Дата переноса устранения дефекта.",
+                                                    "type": "string",
+                                                    "nullable": true
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            },
+                            "example": {
+                                "referenceObject": {
+                                    "orderId": "2000057940",
+                                    "orderBarcode": "0020000579405",
+                                    "orderCategory": "serviceOrder",
+                                    "orderType": null,
+                                    "orderWorkType": "ISER",
+                                    "orderAmountExVat": 0,
+                                    "orderAmountIncVat": 0,
+                                    "currencyCode": "RUB",
+                                    "orderClosed": false
+                                },
+                                "siteId": "5070",
+                                "locationCode": "L14",
+                                "reviewCategory": "VideoCapture",
+                                "changeTimeStamp": "2026-03-10T09:44:28.000000Z",
+                                "closed": false,
+                                "completed": false,
+                                "completionTimeStamp": "1970-01-01T00:00:00.000000Z",
+                                "tasks": [
+                                    {
+                                        "taskId": "0",
+                                        "taskName": "Свободн. позиции",
+                                        "customerApproved": null,
+                                        "deferredTaskDate": null
+                                    },
+                                    {
+                                        "taskId": "1",
+                                        "taskName": "Диагностика АМ при подкл. к Пакетному ТО",
+                                        "customerApproved": null,
+                                        "deferredTaskDate": null
+                                    },
+                                    {
+                                        "taskId": "3",
+                                        "taskName": "Название 1 зел",
+                                        "customerApproved": "rejected",
+                                        "deferredTaskDate": ""
+                                    },
+                                    {
+                                        "taskId": "4",
+                                        "taskName": "Название 2 жел",
+                                        "customerApproved": "approved",
+                                        "deferredTaskDate": ""
+                                    },
+                                    {
+                                        "taskId": "5",
+                                        "taskName": "Название 3 крас",
+                                        "customerApproved": "rejected",
+                                        "deferredTaskDate": ""
+                                    },
+                                    {
+                                        "taskId": "2",
+                                        "taskName": "Название 1 зел",
+                                        "customerApproved": null,
+                                        "deferredTaskDate": null
+                                    }
+                                ],
+                                "details": [
+                                    {
+                                        "taskId": "0",
+                                        "category": "start",
+                                        "answerSigned": false,
+                                        "text": null,
+                                        "lineId": null,
+                                        "positionType": null,
+                                        "idLabourCatalogue": null,
+                                        "positionCode": null,
+                                        "positionName": null,
+                                        "positionMaterialGroup": null,
+                                        "positionQuantity": 0,
+                                        "positionMeasure": null,
+                                        "positionDiscountPercent": 0,
+                                        "positionAmountExVat": 0,
+                                        "positionAmountIncVat": 0
+                                    },
+                                    {
+                                        "taskId": "1",
+                                        "category": "start",
+                                        "answerSigned": false,
+                                        "text": null,
+                                        "lineId": "10",
+                                        "positionType": "labour",
+                                        "idLabourCatalogue": "TRADE_IN",
+                                        "positionCode": "DMS01-001",
+                                        "positionName": "Диагностика АМ при подкл. к Пакетному ТО",
+                                        "positionMaterialGroup": "11000",
+                                        "positionQuantity": 2,
+                                        "positionMeasure": "STD",
+                                        "positionDiscountPercent": 0,
+                                        "positionAmountExVat": 0,
+                                        "positionAmountIncVat": 0
+                                    }
+                                ],
+                                "creationTimestamp": "2026-03-10T08:14:04.000000Z",
+                                "client": {
+                                    "customerType": "person",
+                                    "customerId": "0070012718",
+                                    "customerFirstName": "Андрей",
+                                    "customerMidName": "Вениаминович",
+                                    "customerLastName": "Сильянов",
+                                    "customerPhone": "9772686902",
+                                    "customerAddress": "Россия, 142167, г. Москва, д. Петрово, тер. СНТ Петрово, д. 1, кв. 1",
+                                    "customerEmail": "asilyanov1568@gmail.com",
+                                    "customerTGId": null,
+                                    "customerContactAllowed": false
+                                },
+                                "carDriver": {
+                                    "customerType": "person",
+                                    "customerId": "0070012718",
+                                    "customerFirstName": "Андрей",
+                                    "customerMidName": "Вениаминович",
+                                    "customerLastName": "Сильянов",
+                                    "customerPhone": "9772686902",
+                                    "customerAddress": "Россия, 142167, г. Москва, д. Петрово, тер. СНТ Петрово, д. 1, кв. 1",
+                                    "customerEmail": "asilyanov1568@gmail.com",
+                                    "customerTGId": null,
+                                    "customerContactAllowed": false
+                                },
+                                "carOwner": {
+                                    "customerType": "person",
+                                    "customerId": "0070012718",
+                                    "customerFirstName": "Андрей",
+                                    "customerMidName": "Вениаминович",
+                                    "customerLastName": "Сильянов",
+                                    "customerPhone": "9772686902",
+                                    "customerAddress": "Россия, 142167, г. Москва, д. Петрово, тер. СНТ Петрово, д. 1, кв. 1",
+                                    "customerEmail": "asilyanov1568@gmail.com",
+                                    "customerTGId": null,
+                                    "customerContactAllowed": false
+                                },
+                                "surveyObject": {
+                                    "car": null,
+                                    "carId": "051Mfq8T7z2ofqPmjEO7HG",
+                                    "carBrand": "BMW",
+                                    "carModel": "5 SERIES",
+                                    "carModelCode": "5 SERIES",
+                                    "carVin": "JTMABABJ104006969",
+                                    "carLicensePlate": "В555ВВ777",
+                                    "carLicensePlateCountry": "RU",
+                                    "carFuel": "Бензин",
+                                    "keyForCatalogOfWorks": "*"
+                                },
+                                "requester": {
+                                    "category": "person",
+                                    "specialistId": "00013163",
+                                    "specialistFirstName": "Дмитрий",
+                                    "specialistMidName": "Александрович",
+                                    "specialistLastName": "Серпуховитин",
+                                    "systemsUserId": "RUADSERPUKHO",
+                                    "customerContactAllowed": true
+                                },
+                                "dealerCode": null,
+                                "hasSurveyRefs": false,
+                                "reviewId": null,
+                                "visitStartTime": "2026-03-10T05:00:00.000000Z",
+                                "processStatus": "approvalLinkOpened",
+                                "processStatusRecords": [
+                                    {
+                                        "id": "27bb8699-b905-4b14-b2f4-91bfc47ad554",
+                                        "status": "surveyCompleted",
+                                        "timestamp": "2026-03-10T08:33:30.269659Z"
+                                    },
+                                    {
+                                        "id": "c7b6d6f9-21ed-49cb-87ee-446731ff93ca",
+                                        "status": "quotesCreated",
+                                        "timestamp": "2026-03-10T08:35:30.855196Z"
+                                    },
+                                    {
+                                        "id": "39c70915-9cbc-44ae-8021-68f37ab9aa67",
+                                        "status": "approvalLinkSent",
+                                        "timestamp": "2026-03-10T09:51:07.929521Z"
+                                    },
+                                    {
+                                        "id": "56bea9a1-e39a-41cc-9467-da93913fe844",
+                                        "status": "approvalLinkOpened",
+                                        "timestamp": "2026-03-10T09:51:09.896353Z"
+                                    }
+                                ],
+                                "reviewType": "VC",
+                                "responsibleEmployee": {
+                                    "specialistType": null,
+                                    "specialistId": null,
+                                    "idCategory": null,
+                                    "internalId": null,
+                                    "specialistFirstName": null,
+                                    "specialistMiddleName": null,
+                                    "specialistLastName": null,
+                                    "contactAllowed": false
+                                },
+                                "systemId": "ERD",
+                                "reviewTemplateId": null,
+                                "reviewName": null,
+                                "timeSpent": 0
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Заказ-наряд успешно создан или обновлён",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "referenceObject": {
+                                            "type": "object",
+                                            "additionalProperties": true
+                                        },
+                                        "tasks": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "additionalProperties": true
+                                            },
+                                            "nullable": true
+                                        },
+                                        "details": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "additionalProperties": true
+                                            },
+                                            "nullable": true
+                                        },
+                                        "processStatusRecords": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "additionalProperties": true
+                                            },
+                                            "nullable": true
+                                        },
+                                        "client": {
+                                            "type": "object",
+                                            "nullable": true,
+                                            "additionalProperties": true
+                                        },
+                                        "carDriver": {
+                                            "type": "object",
+                                            "nullable": true,
+                                            "additionalProperties": true
+                                        },
+                                        "carOwner": {
+                                            "type": "object",
+                                            "nullable": true,
+                                            "additionalProperties": true
+                                        },
+                                        "surveyObject": {
+                                            "type": "object",
+                                            "nullable": true,
+                                            "additionalProperties": true
+                                        },
+                                        "requester": {
+                                            "type": "object",
+                                            "nullable": true,
+                                            "additionalProperties": true
+                                        },
+                                        "responsibleEmployee": {
+                                            "type": "object",
+                                            "nullable": true,
+                                            "additionalProperties": true
+                                        },
+                                        "siteId": {
+                                            "type": "string",
+                                            "nullable": true
+                                        },
+                                        "locationCode": {
+                                            "type": "string",
+                                            "nullable": true
+                                        },
+                                        "reviewCategory": {
+                                            "type": "string",
+                                            "nullable": true
+                                        },
+                                        "changeTimeStamp": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "nullable": true
+                                        },
+                                        "closed": {
+                                            "type": "boolean"
+                                        },
+                                        "completed": {
+                                            "type": "boolean"
+                                        },
+                                        "completionTimeStamp": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "nullable": true
+                                        },
+                                        "creationTimestamp": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "nullable": true
+                                        },
+                                        "dealerCode": {
+                                            "type": "string",
+                                            "nullable": true
+                                        },
+                                        "hasSurveyRefs": {
+                                            "type": "boolean"
+                                        },
+                                        "reviewId": {
+                                            "type": "string",
+                                            "nullable": true
+                                        },
+                                        "visitStartTime": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "nullable": true
+                                        },
+                                        "processStatus": {
+                                            "type": "string",
+                                            "nullable": true
+                                        },
+                                        "reviewType": {
+                                            "type": "string",
+                                            "nullable": true
+                                        },
+                                        "systemId": {
+                                            "type": "string",
+                                            "nullable": true
+                                        },
+                                        "reviewTemplateId": {
+                                            "type": "string",
+                                            "nullable": true
+                                        },
+                                        "reviewName": {
+                                            "type": "string",
+                                            "nullable": true
+                                        },
+                                        "timeSpent": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Отсутствует или неверный Bearer token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Invalid bearer token."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Ошибка валидации входных данных",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "errors": {
+                                            "type": "object",
+                                            "additionalProperties": true
+                                        }
+                                    },
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "errors": {
+                                        "referenceObject": [
+                                            "Поле referenceObject обязательно для заполнения."
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "description": "Bearer token, сгенерированный в админке в разделе Настройки.",
+                "bearerFormat": "Bearer",
+                "scheme": "bearer"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "External Services",
+            "description": "Методы для синхронизации заказ-нарядов и связанных данных из внешних систем."
+        }
+    ]
+}
