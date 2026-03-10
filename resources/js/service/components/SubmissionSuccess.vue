@@ -33,21 +33,28 @@ const emit = defineEmits<{
 
             <div class="success-page__content">
                 <div class="success-page__body">
-                    <h1 class="success-page__title">Мы хотим сделать сервис лучше</h1>
-                    <p class="success-page__subtitle">
+                    <h1 class="success-page__title" v-if="!reviewSubmitted">Мы хотим сделать сервис лучше</h1>
+                    <p class="success-page__subtitle" v-if="!reviewSubmitted">
                         Нажмите на кнопку «Оставить отзыв» и пройдите короткий опрос
                     </p>
+                    <template v-else>
+                        <div class="smail"></div>
+                        <p class="success-page__subtitle">
+                            Спасибо за обратную связь!
+                        </p>
+                    </template>
 
                     <div class="success-page__actions">
 
 
                         <button
+                            v-if="!reviewSubmitted"
                             type="button"
                             class="success-page__button success-page__button--primary"
                             :disabled="reviewSubmitted"
                             @click="emit('open-review')"
                         >
-                            {{ reviewSubmitted ? 'Отзыв отправлен' : 'Оставить отзыв' }}
+                            {{ reviewSubmitted ? 'Спасибо за обратную связь!' : 'Оставить отзыв' }}
                         </button>
                     </div>
                 </div>

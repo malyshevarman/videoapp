@@ -819,6 +819,16 @@ button {
     background: var(--dark);
 }
 
+.smail{
+    display: block;
+    margin: 0 auto 20px;
+    width: 70px;
+    height: 70px;
+    border-radius: 100%;
+    background: url("../images/smail.svg") 50% 50% no-repeat;
+    background-size: cover;
+}
+
 /* NOTE SECTION */
 .note {
     margin: 20px 0;
