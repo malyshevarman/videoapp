@@ -1,4 +1,5 @@
 @extends('layouts.services')
+@section('title', 'Сервис')
 
 @section('content')
     <div id="service-client"

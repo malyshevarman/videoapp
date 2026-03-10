@@ -96,9 +96,7 @@
                                                 <span>{{ $reviewAverage !== null ? number_format((float) $reviewAverage, 1, ',', ' ') : '—' }}</span>
                                                 <small>/ 5</small>
                                             </div>
-                                            <div class="text-muted small mt-1 service-review-text">
-                                                {{ $review->comment ? \Illuminate\Support\Str::limit($review->comment, 90) : 'Без комментария' }}
-                                            </div>
+
                                         @else
                                             <span class="text-muted small">Нет отзыва</span>
                                         @endif
