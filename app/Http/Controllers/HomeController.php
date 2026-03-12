@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 use App\Models\ServiceOrder;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 
 class HomeController extends Controller
 {
@@ -189,6 +189,65 @@ class HomeController extends Controller
             'success' => true,
             'tasks' => $service->tasks,
             'local_status' => $service->local_status,
+        ]);
+    }
+
+    public function requestCallback(Request $request, string $public_url)
+    {
+        $validated = $request->validate([
+            'item_id' => 'required',
+            'item_title' => 'nullable|string|max:255',
+        ]);
+
+        $service = ServiceOrder::where('public_url', $public_url)
+            ->with('user')
+            ->firstOrFail();
+
+        $recipientEmail = $service->user?->email;
+
+        if (empty($recipientEmail)) {
+            return response()->json([
+                'message' => 'Для заявки не найден email получателя.',
+            ], 422);
+        }
+
+        $client = is_array($service->client) ? $service->client : [];
+        $clientName = trim(implode(' ', array_filter([
+            $client['customerLastName'] ?? null,
+            $client['customerFirstName'] ?? null,
+            $client['customerMidName'] ?? null,
+        ])));
+        $clientPhone = $client['customerPhone'] ?? 'не указан';
+        $orderNumber = data_get($service->referenceObject, 'orderId', $service->order_id);
+
+        $itemTitle = trim((string) ($validated['item_title'] ?? ''));
+        if ($itemTitle === '') {
+            $itemTitle = collect($service->defects ?? [])
+                ->firstWhere('id', (string) $validated['item_id'])['title'] ?? '';
+        }
+
+        $messageLines = [
+            "Клиент по заявке №{$orderNumber} запросил обратный звонок.",
+            '',
+            'Причина: клиент ожидает, что менеджер свяжется с ним и подскажет по вопросу.',
+            'Клиент: ' . ($clientName !== '' ? $clientName : 'не указан'),
+            "Телефон: {$clientPhone}",
+        ];
+
+        if ($itemTitle !== '') {
+            $messageLines[] = "Позиция: {$itemTitle}";
+        }
+
+        $messageLines[] = 'Ссылка на заявку: ' . url("/services/{$service->public_url}");
+
+        Mail::raw(implode(PHP_EOL, $messageLines), function ($message) use ($recipientEmail, $orderNumber) {
+            $message
+                ->to($recipientEmail)
+                ->subject("Запрос обратного звонка по заявке №{$orderNumber}");
+        });
+
+        return response()->json([
+            'success' => true,
         ]);
     }
 

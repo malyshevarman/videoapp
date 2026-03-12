@@ -31,13 +31,17 @@
     "file": "assets/logo-DatOAv7x.svg",
     "src": "resources/images/logo.svg"
   },
+  "resources/images/smail.svg": {
+    "file": "assets/smail-CXCjrQjX.svg",
+    "src": "resources/images/smail.svg"
+  },
   "resources/js/app.js": {
-    "file": "assets/app-BnQwP_KO.js",
+    "file": "assets/app-BRRmcJut.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
     "css": [
-      "assets/app-wlYvJBjT.css"
+      "assets/app-QYPc098w.css"
     ],
     "assets": [
       "assets/logo-DatOAv7x.svg",
@@ -54,7 +58,7 @@
     "isEntry": true
   },
   "resources/sass/appstyle.scss": {
-    "file": "assets/appstyle-DxmbKR2w.css",
+    "file": "assets/appstyle-LHSGdEVd.css",
     "src": "resources/sass/appstyle.scss",
     "isEntry": true
   },

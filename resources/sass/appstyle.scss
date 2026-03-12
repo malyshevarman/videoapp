@@ -815,6 +815,10 @@ button {
     background: var(--yellow);
 }
 
+.item__tag.is-green {
+    background: #28a745;
+}
+
 .item__tag.is-dark {
     background: var(--dark);
 }
@@ -994,6 +998,9 @@ p.bold {
 .sticky__right {
     display: flex;
     align-items: center;
+    .btn--ghost{
+        margin: 0 10px 0 0;
+    }
 }
 
 .sticky__label {

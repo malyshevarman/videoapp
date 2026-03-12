@@ -74,6 +74,7 @@ const localServiceStatus = ref(props.service.local_status ?? props.service.local
 const isReviewFormOpen = ref(false)
 const hasReview = ref(Boolean(props.service.service_review?.id))
 const isReviewSubmitting = ref(false)
+const isCallbackSubmitting = ref(false)
 
 onMounted(() => {
     loadVideo()
@@ -345,12 +346,47 @@ function confirmDeferred() {
     })
 }
 
-function requestCallback() {
-    setCustomerApproved('callback')
-    toast.info(`Заявка принята`, {
-        description: 'Мастер-консультант свяжется с Вами в ближайшее время',
-        class: 'toast-callback',
-    })
+async function requestCallback() {
+    if (!activeItem.value || !props.service.public_url || isCallbackSubmitting.value) return
+
+    isCallbackSubmitting.value = true
+
+    try {
+        const res = await fetch(`/services/${props.service.public_url}/callback`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document
+                    .querySelector('meta[name="csrf-token"]')
+                    .getAttribute('content'),
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+                item_id: activeItem.value.id,
+                item_title: activeItem.value.title,
+            }),
+        })
+
+        const data = await res.json().catch(() => null)
+
+        if (!res.ok) {
+            throw new Error(data?.message ?? 'Ошибка отправки заявки')
+        }
+
+        toast.info('Заявка принята', {
+            description: 'Мастер-консультант свяжется с Вами в ближайшее время',
+            class: 'toast-callback',
+        })
+        setCustomerApproved('callback')
+    } catch (err) {
+        const message = err instanceof Error ? err.message : 'Ошибка отправки заявки'
+        toast.error('Ошибка', {
+            description: message,
+        })
+        console.error(err)
+    } finally {
+        isCallbackSubmitting.value = false
+    }
 }
 function approveActiveItem() {
     if (!activeItem.value) return

@@ -23,6 +23,8 @@ Route::get('/video/play/{id}', [HomeController::class, 'videoplay'])
 Route::get('/services/{public_url}/show', [HomeController::class, 'showservices'])->name('services.show');
 Route::post('/services/{public_url}/update', [HomeController::class, 'updateservices'])
     ->name('services.update');
+Route::post('/services/{public_url}/callback', [HomeController::class, 'requestCallback'])
+    ->name('services.callback');
 Route::post('/services/{public_url}/review', [HomeController::class, 'storereview'])
     ->name('services.review');
 Route::post('/services/{public_url}/sent', [HomeController::class, 'markApprovalLinkSent'])
