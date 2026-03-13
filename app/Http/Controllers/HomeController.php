@@ -231,14 +231,13 @@ class HomeController extends Controller
             '',
             'Причина: клиент ожидает, что менеджер свяжется с ним и подскажет по вопросу.',
             'Клиент: ' . ($clientName !== '' ? $clientName : 'не указан'),
-            "Телефон: {$clientPhone}",
         ];
 
         if ($itemTitle !== '') {
             $messageLines[] = "Позиция: {$itemTitle}";
         }
 
-        $messageLines[] = 'Ссылка на заявку: ' . url("/services/{$service->public_url}");
+        //$messageLines[] = 'Ссылка на заявку: ' . url("/services/{$service->public_url}");
 
         Mail::raw(implode(PHP_EOL, $messageLines), function ($message) use ($recipientEmail, $orderNumber) {
             $message
