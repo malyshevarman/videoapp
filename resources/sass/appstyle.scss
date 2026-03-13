@@ -1657,7 +1657,7 @@ p.bold {
             min-height: 100dvh;
             padding-bottom: env(safe-area-inset-bottom);
 
-            z-index: 9;
+            z-index: 99;
             background: white;
             overflow: auto;
             .video{
@@ -1669,6 +1669,14 @@ p.bold {
     body.has-active-item{
         overflow: hidden;
         background: white;
+    }
+    body.has-active-item::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background: #fff;
+        z-index: 98; // поверх всего
+        pointer-events: none;
     }
 
 }
