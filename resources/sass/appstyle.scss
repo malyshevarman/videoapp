@@ -1515,7 +1515,17 @@ p.bold {
 .closemobile{
     display: none;
 }
+.showmobile{
+    display: none!important;
+}
+
 @media (max-width: 780px) {
+    .showmobile{
+        display: block!important;
+    }
+    .hidemobile{
+        display: none!important;
+    }
     .container{
         width: 100%;
 

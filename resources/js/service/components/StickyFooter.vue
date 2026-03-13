@@ -144,7 +144,7 @@ function toggleDeferredView() {
                     <div class="sticky__right">
 
                         <button
-                            class="btn btn--ghost"
+                            class="btn btn--ghost hidemobile"
                             type="button"
                             v-if="!isFirst && !showDeferred"
                             @click="goPrev"
@@ -154,14 +154,14 @@ function toggleDeferredView() {
 
                         <button
                             v-if="!isLast && !showDeferred"
-                            class="btn btn--next"
+                            class="btn btn--next hidemobile"
                             type="button"
                             @click="goNext"
                         >
                             Далее
                         </button>
 
-                       <div class="groupBtn">
+                       <div class="groupBtn hidemobile">
                            <button
                                v-if="isLast && deferredStats.count"
                                class="btn btn--ghost"
@@ -181,6 +181,17 @@ function toggleDeferredView() {
                                Подтвердить
                            </button>
                        </div>
+
+                        <div class="groupBtn showmobile">
+                            <button
+                                class="btn btn--primary"
+                                type="button"
+                                :disabled="!allHaveStatus"
+                                @click="submitAll"
+                            >
+                                Подтвердить
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
