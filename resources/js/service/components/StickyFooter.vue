@@ -146,7 +146,7 @@ function toggleDeferredView() {
                         <button
                             class="btn btn--ghost"
                             type="button"
-                            v-if="!isFirst && !showDeferred && !isLast"
+                            v-if="!isFirst && !showDeferred"
                             @click="goPrev"
                         >
                             Назад

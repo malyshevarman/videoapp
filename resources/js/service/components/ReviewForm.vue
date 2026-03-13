@@ -74,7 +74,9 @@ function submitReview() {
             <div class="success-page__banner">
                 <div class="success-page__banner-inner">
                     <span class="mrg"></span>
-                    <img :src="logoImage" alt="БорисХоф" class="success-page__logo">
+                    <div class="top__brand">
+                        <div class="top__logo" aria-label="БорисХоф"></div>
+                    </div>
                 </div>
             </div>
 

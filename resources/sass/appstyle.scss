@@ -1512,9 +1512,47 @@ p.bold {
     }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 780px) {
+    .container{
+        width: 100%;
+
+    }
+    .top__logo{
+        width: 74px;
+        height: 20px;
+        background: url("../images/logomobile.svg") 50% 50% no-repeat;
+        background-size: cover;
+    }
+
+    .top__grid{
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
     .top__title {
-        font-size: 24px;
+        font-size: 22px;
+    }
+    .note{
+        padding: 10px 15px;
+        display: flex;
+        flex-direction: column;
+    }
+    .page {
+        padding-bottom: 250px;
+    }
+    .note__bottom{
+        align-items: center;
+        justify-content: center;
+        flex-direction: column-reverse;
+        text-align: center;
+        order: 2;
+        margin: 15px 0 0 0;
+
+    }
+    .note__tg{
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
     .kv__row {
         grid-template-columns: 1fr;
@@ -1529,5 +1567,66 @@ p.bold {
         grid-template-columns: 1fr;
         height: auto;
         padding: 12px 0;
+        flex-direction: column;
+        .col_left{
+            width: 100%;
+            padding: 0 15px;
+        }
+        .col_right{
+            width: 100%;
+            padding: 0 15px;
+            flex-direction: column;
+            align-items: flex-end;
+
+        }
     }
+    .groupBtn{
+        width: 100%;
+    }
+    .sticky__right{
+        flex-direction: column;
+        width: 100%;
+
+        .btn{
+            width: 100%;
+            margin: 15px 0 0 0;
+            display: block;
+        }
+    }
+
+    .sticky__head{
+        padding: 10px 15px;
+    }
+
+    .sticky__list{
+        padding: 10px 15px;
+        .sticky__list-row{
+            width: 100%;
+            max-width: 100%;
+        }
+    }
+    .sticky__mid{
+        padding: 0;
+    }
+    .sticky__head:after{
+        right: 15px;
+    }
+
+    .success-page__status{
+        flex-direction: column;
+
+    }
+
+    .success-page__banner-inner{
+        display: flex;
+        flex-direction: column-reverse;
+        align-items: center;
+        .top__brand{
+            margin: 0 0 0 auto;
+        }
+    }
+    .success-page {
+        min-height: 100vh;
+    }
+
 }

@@ -27,7 +27,9 @@ const emit = defineEmits<{
                         <span>Данные успешно переданы</span>
                     </div>
 
-                    <img :src="logoImage" alt="БорисХоф" class="success-page__logo">
+                    <div class="top__brand">
+                        <div class="top__logo" aria-label="БорисХоф"></div>
+                    </div>
                 </div>
             </div>
 
