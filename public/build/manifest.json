@@ -23,6 +23,10 @@
     "file": "assets/arrowdown-CCKdEwmj.svg",
     "src": "resources/images/arrowdown.svg"
   },
+  "resources/images/closemobile.svg": {
+    "file": "assets/closemobile-C4Ou7BcT.svg",
+    "src": "resources/images/closemobile.svg"
+  },
   "resources/images/info.svg": {
     "file": "assets/info-7r580py2.svg",
     "src": "resources/images/info.svg"
@@ -31,12 +35,16 @@
     "file": "assets/logo-DatOAv7x.svg",
     "src": "resources/images/logo.svg"
   },
+  "resources/images/logomobile.svg": {
+    "file": "assets/logomobile-DC56-dPj.svg",
+    "src": "resources/images/logomobile.svg"
+  },
   "resources/images/smail.svg": {
     "file": "assets/smail-CXCjrQjX.svg",
     "src": "resources/images/smail.svg"
   },
   "resources/js/app.js": {
-    "file": "assets/app-BRRmcJut.js",
+    "file": "assets/app-DekrX1Rn.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -44,7 +52,6 @@
       "assets/app-QYPc098w.css"
     ],
     "assets": [
-      "assets/logo-DatOAv7x.svg",
       "assets/primeicons-DMOk5skT.eot",
       "assets/primeicons-C6QP2o4f.woff2",
       "assets/primeicons-WjwUDZjB.woff",
@@ -58,7 +65,7 @@
     "isEntry": true
   },
   "resources/sass/appstyle.scss": {
-    "file": "assets/appstyle-LHSGdEVd.css",
+    "file": "assets/appstyle-Bua6nHCQ.css",
     "src": "resources/sass/appstyle.scss",
     "isEntry": true
   },

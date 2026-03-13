@@ -1512,6 +1512,9 @@ p.bold {
     }
 }
 
+.closemobile{
+    display: none;
+}
 @media (max-width: 780px) {
     .container{
         width: 100%;
@@ -1627,6 +1630,33 @@ p.bold {
     }
     .success-page {
         min-height: 100vh;
+    }
+
+    .closemobile{
+        background: url("../images/closemobile.svg") 50% 50% no-repeat;
+        background-size: cover;
+        margin: 0 15px 15px auto;
+        width: 32px;
+        height: 32px;
+        display: block;
+    }
+
+    .panel__left{
+        display: none;
+
+        &.mobileshow{
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: fixed;
+            left: 0;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            height: 100vh;
+            z-index: 9;
+            background: white;
+        }
     }
 
 }

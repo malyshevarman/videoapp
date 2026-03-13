@@ -77,11 +77,18 @@ const isReviewSubmitting = ref(false)
 const isCallbackSubmitting = ref(false)
 
 onMounted(() => {
-    loadVideo()
-    if (localItems.value.length > 0) {
-        activeItem.value = localItems.value[0]
+    loadVideo();
+
+    const isMobile = window.matchMedia('(max-width: 767px)').matches;
+
+    if (!isMobile && localItems.value.length > 0) {
+        activeItem.value = localItems.value[0];
     }
 });
+
+const closeMobile = () => {
+    activeItem.value = null;
+};
 
 const activeIndex = computed(() =>
     activeItem.value
@@ -582,8 +589,9 @@ const approvedRepairTimeHours = computed(() => {
         <main v-if="!isClosed" class="main">
             <div class="container">
                 <section class="panel">
-                    <div class="panel__left">
+                    <div class="panel__left" :class="activeItem ? 'mobileshow':''">
                         <!-- VIDEO -->
+                        <div class="closemobile" @click="closeMobile"></div>
                         <div class="video">
                             <div class="video__media">
 
