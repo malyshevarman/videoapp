@@ -1684,7 +1684,7 @@ p.bold {
         content: '';
         position: fixed;
         inset: 0;
-        background: #fff;
+        background: rgba(0, 34, 57, 0.05);
         z-index: 98; // поверх всего
         pointer-events: none;
     }
