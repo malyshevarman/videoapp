@@ -7,6 +7,7 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
+    (e: 'back'): void
     (e: 'open-review'): void
 }>()
 </script>
@@ -47,6 +48,13 @@ const emit = defineEmits<{
                     </template>
 
                     <div class="success-page__actions">
+                        <button
+                            type="button"
+                            class="success-page__button"
+                            @click="emit('back')"
+                        >
+                            Назад к видео
+                        </button>
 
 
                         <button

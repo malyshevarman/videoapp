@@ -67,6 +67,10 @@ const props = defineProps({
         type: Function as PropType<() => void>,
         required: true,
     },
+    isReadOnly: {
+        type: Boolean,
+        default: false,
+    },
 })
 
 const statusText = (item: Item | null) => props.getStatusText(item?.customerApproved)
@@ -166,25 +170,25 @@ const toggleGroup = (index: number) => {
                 </div>
                 <div class="work__actions">
                     <button class="btn btn--ghost" type="button"
-                            :disabled="activeItem?.customerApproved === 'callback'"
+                            :disabled="props.isReadOnly || activeItem?.customerApproved === 'callback'"
                             @click="requestCallback"
                     >Обратный звонок</button>
 
                     <button class="btn btn--ghost" type="button"
-                            :disabled="activeItem?.customerApproved === 'deferred'"
+                            :disabled="props.isReadOnly || activeItem?.customerApproved === 'deferred'"
                             @click="openDeferredModal"
                     >
                         Напомнить позже
                     </button>
 
                     <button class="btn btn--ghost" type="button"
-                            :disabled="activeItem?.customerApproved === 'rejected'"
+                            :disabled="props.isReadOnly || activeItem?.customerApproved === 'rejected'"
                             @click="openRejectConfirm">
                         Отклонить
                     </button>
 
                     <button class="btn btn--primary" type="button"
-                            :disabled="activeItem?.customerApproved === 'approved'"
+                            :disabled="props.isReadOnly || activeItem?.customerApproved === 'approved'"
                             @click="approveActiveItem">
                         Согласовать
                     </button>

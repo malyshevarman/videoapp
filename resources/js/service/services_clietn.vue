@@ -75,6 +75,8 @@ const isReviewFormOpen = ref(false)
 const hasReview = ref(Boolean(props.service.service_review?.id))
 const isReviewSubmitting = ref(false)
 const isCallbackSubmitting = ref(false)
+const showSubmissionSuccess = ref(false)
+const reviewReturnTarget = ref<'page' | 'success'>('page')
 
 onMounted(() => {
     loadVideo();
@@ -108,7 +110,7 @@ const visitDate = computed(() =>
     dayjs(props.service.visitStartTime).format('D MMMM YYYY')
 )
 const isClosed = computed(() => localServiceStatus.value === 'closed')
-const showSuccessScreen = computed(() => isClosed.value && !isReviewFormOpen.value)
+const isReadOnly = computed(() => isClosed.value)
 const approvedStats = computed(() => {
     return localItems.value.reduce(
         (acc, item) => {
@@ -259,7 +261,7 @@ function formatTime(hours: number) {
     return `${hours} ч.`
 }
 function setCustomerApproved(status: CustomerApproved) {
-    if (!activeItem.value) return
+    if (!activeItem.value || isReadOnly.value) return
 
     const id = activeItem.value.id
 
@@ -281,7 +283,7 @@ function setCustomerApproved(status: CustomerApproved) {
 
 
 function openRejectConfirm() {
-    if (!activeItem.value) return
+    if (!activeItem.value || isReadOnly.value) return
     isRejectOpen.value = true
 }
 
@@ -290,6 +292,7 @@ function closeRejectConfirm() {
 }
 
 function confirmReject() {
+    if (isReadOnly.value) return
     setCustomerApproved('rejected')
     closeRejectConfirm()
 
@@ -326,7 +329,7 @@ function updateDeferredTaskDate(value: string | null) {
 }
 
 function openDeferredModal() {
-    if (!activeItem.value) return
+    if (!activeItem.value || isReadOnly.value) return
         // если хочешь каждый раз чистить дату:
         ;(activeItem.value as Item).deferredTaskDate = null
     syncActiveToLocal()
@@ -342,7 +345,7 @@ function closeDeferredModal(clear = true) {
     isDeferredOpen.value = false
 }
 function confirmDeferred() {
-    if (!activeItem.value || !activeItem.value.deferredTaskDate) return
+    if (!activeItem.value || !activeItem.value.deferredTaskDate || isReadOnly.value) return
     setCustomerApproved('deferred')
     closeDeferredModal(false) // ✅ НЕ чистим дату
 
@@ -354,7 +357,7 @@ function confirmDeferred() {
 }
 
 async function requestCallback() {
-    if (!activeItem.value || !props.service.public_url || isCallbackSubmitting.value) return
+    if (!activeItem.value || !props.service.public_url || isCallbackSubmitting.value || isReadOnly.value) return
 
     isCallbackSubmitting.value = true
 
@@ -396,7 +399,7 @@ async function requestCallback() {
     }
 }
 function approveActiveItem() {
-    if (!activeItem.value) return
+    if (!activeItem.value || isReadOnly.value) return
 
     if (activeItem.value.customerApproved === 'approved') return
 
@@ -411,7 +414,7 @@ function approveActiveItem() {
 
 }
 async function submitAll() {
-    if (!allHaveStatus.value) return
+    if (!allHaveStatus.value || isReadOnly.value) return
 
     try {
         const res = await fetch(`/services/${props.service.public_url}/update`, {
@@ -444,6 +447,7 @@ async function submitAll() {
             description: 'Все предложения обработаны',
         })
         localServiceStatus.value = data?.local_status ?? 'closed'
+        showSubmissionSuccess.value = true
     } catch (err) {
         const message = err instanceof Error ? err.message : 'Ошибка сохранения'
         toast.error('Ошибка', {
@@ -455,11 +459,13 @@ async function submitAll() {
 
 function openReviewForm() {
     if (hasReview.value) return
+    reviewReturnTarget.value = showSubmissionSuccess.value ? 'success' : 'page'
     isReviewFormOpen.value = true
 }
 
 function closeReviewForm() {
     isReviewFormOpen.value = false
+    showSubmissionSuccess.value = reviewReturnTarget.value === 'success'
 }
 
 async function submitReview(payload: {
@@ -496,6 +502,7 @@ async function submitReview(payload: {
 
         hasReview.value = true
         isReviewFormOpen.value = false
+        showSubmissionSuccess.value = true
 
         toast.success('Отзыв отправлен', {
             description: 'Спасибо за оценку сервиса',
@@ -573,27 +580,45 @@ function syncBodyActiveItemClass() {
 watch(activeItem, () => {
     syncBodyActiveItemClass()
 })
+
+function returnFromSuccess() {
+    showSubmissionSuccess.value = false
+}
 </script>
 <template>
     <ReviewForm
-        v-if="isClosed && isReviewFormOpen"
+        v-if="isReviewFormOpen"
         :submitting="isReviewSubmitting"
         @back="closeReviewForm"
         @submit="submitReview"
     />
 
     <SubmissionSuccess
-        v-else-if="showSuccessScreen"
+        v-else-if="showSubmissionSuccess"
         :review-submitted="hasReview"
+        @back="returnFromSuccess"
         @open-review="openReviewForm"
     />
 
     <div class="page" v-else>
         <!-- TOP CARD -->
-        <ServiceHeader v-if="!isClosed" :service="service" :visit-date="visitDate" />
+        <div v-if="isReadOnly" class="readonly-banner">
+            <div class="readonly-banner__text">Редактирование невозможно.</div>
+            <button
+                v-if="!hasReview"
+                type="button"
+                class="readonly-banner__link"
+                @click="openReviewForm"
+            >
+                Оставьте отзыв
+            </button>
+            <div v-else class="readonly-banner__done">Вы уже оставили отзыв</div>
+        </div>
+
+        <ServiceHeader :service="service" :visit-date="visitDate" />
 
         <!-- MAIN -->
-        <main v-if="!isClosed" class="main">
+        <main class="main">
             <div class="container">
                 <section class="panel">
                     <div class="panel__left" :class="activeItem ? 'mobileshow':''">
@@ -655,6 +680,7 @@ watch(activeItem, () => {
                                 :open-deferred-modal="openDeferredModal"
                                 :open-reject-confirm="openRejectConfirm"
                                 :approve-active-item="approveActiveItem"
+                                :is-read-only="isReadOnly"
                             />
 
 
@@ -665,7 +691,7 @@ watch(activeItem, () => {
                     <aside class="panel__right">
                         <div class="callout">
                             <div class="callout__title">
-                                Пожалуйста, посмотрите предложения по ремонтным работам и примите решение
+                                {{ isReadOnly ? 'Решение по ремонтным работам уже принято. Вы можете просмотреть видео и список работ.' : 'Пожалуйста, посмотрите предложения по ремонтным работам и примите решение' }}
                             </div>
                             <div class="callout__actions">
                                 <a class="callout__link" href="#">
@@ -765,7 +791,7 @@ watch(activeItem, () => {
 
         <!-- STICKY BOTTOM -->
         <StickyFooter
-            v-if="!isClosed"
+            v-if="!isReadOnly"
             :sticky-open="stickyOpen"
             :approved-stats="approvedStats"
             :approved-items-list="approvedItemsList"
@@ -787,7 +813,7 @@ watch(activeItem, () => {
 
 
     <RejectModal
-        v-if="!isClosed"
+        v-if="!isReadOnly"
         :is-open="isRejectOpen"
         :active-item-number="activeItemNumber"
         @close="closeRejectConfirm"
@@ -796,7 +822,7 @@ watch(activeItem, () => {
 
 
     <DeferredModal
-        v-if="!isClosed"
+        v-if="!isReadOnly"
         :is-open="isDeferredOpen"
         :model-value="deferredTaskDateModel"
         :locale="ru"
@@ -812,3 +838,49 @@ watch(activeItem, () => {
     <Toaster position="top-right" />
 
 </template>
+
+<style scoped>
+.readonly-banner {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 20px;
+    background: #002239;
+    color: #fff;
+}
+
+.readonly-banner__text {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.readonly-banner__link {
+    border: 0;
+    padding: 0;
+    background: transparent;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.readonly-banner__done {
+    font-size: 14px;
+    font-weight: 700;
+    color: #d5f1d4;
+}
+
+@media (max-width: 767px) {
+    .readonly-banner {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 12px 16px;
+    }
+}
+</style>
