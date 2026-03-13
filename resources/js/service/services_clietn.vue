@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, nextTick } from 'vue'
+import { computed, onMounted,watch, ref, nextTick } from 'vue'
 import dayjs from 'dayjs'
 import 'dayjs/locale/ru'
 
@@ -565,6 +565,13 @@ const approvedRepairTimeHours = computed(() => {
 
             return sum + hours
         }, 0)
+})
+function syncBodyActiveItemClass() {
+    document.body.classList.toggle('has-active-item', !!activeItem.value)
+}
+
+watch(activeItem, () => {
+    syncBodyActiveItemClass()
 })
 </script>
 <template>
