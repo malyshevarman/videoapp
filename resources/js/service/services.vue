@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, ref, onMounted } from 'vue'
+import { reactive, ref, onBeforeUnmount, onMounted } from 'vue'
 import draggable from 'vuedraggable'
 import { Toaster, toast } from 'vue-sonner'
 
@@ -11,12 +11,16 @@ const service = reactive(props.service)
 const defects = ref([])
 const isSaved = ref(false)
 const isLinkCopied = ref(false)
+const isSendMenuOpen = ref(false)
+const isSendingEmail = ref(false)
+const isSendingSms = ref(false)
 
 const videoData = ref(null)
 const videoUrl = ref(null)
 
 const previewVideo = ref(null)
 const previewCanvas = ref(null)
+const sendMenuRef = ref(null)
 
 function clampTime(element) {
     if (!previewVideo.value) return
@@ -48,6 +52,12 @@ onMounted(() => {
     } else {
         defects.value = []
     }
+
+    document.addEventListener('click', handleOutsideSendMenuClick)
+})
+
+onBeforeUnmount(() => {
+    document.removeEventListener('click', handleOutsideSendMenuClick)
 })
 
 const newDefect = reactive({
@@ -155,17 +165,6 @@ const copyServiceLink = async (event) => {
     event.preventDefault()
 
     try {
-
-        await fetch(`/services/${service.public_url}/sent`, {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': document
-                    .querySelector('meta[name="csrf-token"]')
-                    .getAttribute('content'),
-                'Accept': 'application/json',
-            },
-        })
-
         const link = `${window.location.origin}/${service.public_url}/`
         await copyToClipboard(link)
 
@@ -178,6 +177,99 @@ const copyServiceLink = async (event) => {
         toast.error('Не удалось скопировать ссылку', {
             description: 'Проверьте доступ к буферу обмена и попробуйте снова',
         })
+    }
+}
+
+const handleOutsideSendMenuClick = (event) => {
+    if (!isSendMenuOpen.value) return
+    if (sendMenuRef.value?.contains(event.target)) return
+
+    isSendMenuOpen.value = false
+}
+
+const toggleSendMenu = (event) => {
+    event.preventDefault()
+    event.stopPropagation()
+    isSendMenuOpen.value = !isSendMenuOpen.value
+}
+
+const sendClientEmail = async (event) => {
+    event.preventDefault()
+    event.stopPropagation()
+
+    if (!window.confirm('Вы уверены в отправке email?')) {
+        return
+    }
+
+    isSendMenuOpen.value = false
+    isSendingEmail.value = true
+
+    try {
+        const response = await fetch(`/admin/services/${service.id}/share/email`, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document
+                    .querySelector('meta[name="csrf-token"]')
+                    .getAttribute('content'),
+                'Accept': 'application/json',
+            },
+        })
+
+        const payload = await response.json().catch(() => ({}))
+
+        if (!response.ok) {
+            throw new Error(payload.message || 'Не удалось отправить email клиенту')
+        }
+
+        toast.success('Email отправлен', {
+            description: 'Клиенту отправлена ссылка на видео-обзор сервиса',
+        })
+    } catch (error) {
+        toast.error('Ошибка отправки email', {
+            description: error.message || 'Проверьте настройки почты и попробуйте снова',
+        })
+    } finally {
+        isSendingEmail.value = false
+    }
+}
+
+const sendClientSms = async (event) => {
+    event.preventDefault()
+    event.stopPropagation()
+
+    if (!window.confirm('Вы уверены в отправке SMS?')) {
+        return
+    }
+
+    isSendMenuOpen.value = false
+    isSendingSms.value = true
+
+    try {
+        const response = await fetch(`/admin/services/${service.id}/share/sms`, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document
+                    .querySelector('meta[name="csrf-token"]')
+                    .getAttribute('content'),
+                'Accept': 'application/json',
+            },
+        })
+
+        const payload = await response.json().catch(() => ({}))
+
+        if (!response.ok) {
+            throw new Error(payload.message || 'Не удалось отправить SMS клиенту')
+        }
+
+        toast.success('SMS отправлено', {
+            description: 'Клиенту отправлена ссылка на видео-обзор сервиса',
+        })
+    } catch (error) {
+        toast.error('Ошибка отправки SMS', {
+            description: error.message || 'Проверьте настройки SMS-провайдера и попробуйте снова',
+        })
+    } finally {
+        isSendingSms.value = false
     }
 }
 </script>
@@ -282,6 +374,36 @@ const copyServiceLink = async (event) => {
                                     <a href="#" class="btn btn-sm btn-info" @click.prevent="copyServiceLink" title="Скопировать ссылку клиента">
                                         <i class="fas fa-copy mr-1"></i>{{ isLinkCopied ? 'Скопировано' : 'Копировать ссылку' }}
                                     </a>
+
+                                    <div ref="sendMenuRef" class="share-dropdown">
+                                        <button
+                                            type="button"
+                                            class="btn btn-sm btn-warning"
+                                            :disabled="isSendingEmail || isSendingSms"
+                                            @click="toggleSendMenu"
+                                        >
+                                            <i class="fas fa-paper-plane mr-1"></i>{{ isSendingEmail || isSendingSms ? 'Отправка...' : 'Отправить' }}
+                                        </button>
+
+                                        <div v-if="isSendMenuOpen" class="share-dropdown-menu">
+                                            <button
+                                                type="button"
+                                                class="share-dropdown-item"
+                                                :disabled="isSendingEmail || isSendingSms"
+                                                @click="sendClientEmail"
+                                            >
+                                                Email
+                                            </button>
+                                            <button
+                                                type="button"
+                                                class="share-dropdown-item"
+                                                :disabled="isSendingEmail || isSendingSms"
+                                                @click="sendClientSms"
+                                            >
+                                                SMS
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -535,6 +657,43 @@ const copyServiceLink = async (event) => {
 .actions-inline {
     display: flex;
     gap: 0.45rem;
+}
+
+.share-dropdown {
+    position: relative;
+}
+
+.share-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 0.35rem);
+    right: 0;
+    min-width: 140px;
+    padding: 0.35rem 0;
+    background: #fff;
+    border: 1px solid #dfe3e8;
+    border-radius: 0.5rem;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
+    z-index: 20;
+}
+
+.share-dropdown-item {
+    display: block;
+    width: 100%;
+    padding: 0.5rem 0.85rem;
+    background: transparent;
+    border: 0;
+    text-align: left;
+    font-size: 0.9rem;
+    color: #1f2937;
+}
+
+.share-dropdown-item:hover:not(:disabled) {
+    background: #f3f4f6;
+}
+
+.share-dropdown-item:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
 }
 
 .section-title {

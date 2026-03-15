@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    'beeline_sms' => [
+        'url' => env('BEELINE_SMS_URL', 'http://beeline.amega-inform.ru/sendsms2/'),
+        'user' => env('BEELINE_SMS_USER'),
+        'pass' => env('BEELINE_SMS_PASS'),
+        'action' => env('BEELINE_SMS_ACTION', 'post_sms'),
+        'sender' => env('BEELINE_SMS_SENDER', 'BORISHOF'),
+    ],
+
 ];

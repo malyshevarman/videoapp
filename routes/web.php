@@ -8,6 +8,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\Admin\ServiceReviewController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\DealerController;
+use App\Http\Controllers\ServiceShareController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\Api\ExternalServiceController;
 
@@ -28,11 +29,6 @@ Route::post('/services/{public_url}/callback', [HomeController::class, 'requestC
     ->name('services.callback');
 Route::post('/services/{public_url}/review', [HomeController::class, 'storereview'])
     ->name('services.review');
-Route::post('/services/{public_url}/sent', [HomeController::class, 'markApprovalLinkSent'])
-    ->middleware('auth')
-    ->name('services.sent');
-
-
 Route::get('video', [ExternalServiceController::class, 'show']);
 Route::middleware('auth')->prefix('video')->group(function () {
     Route::post('upload-chunks', [ExternalServiceController::class, 'uploadChunks']);
@@ -55,6 +51,8 @@ Route::middleware(['auth', 'admin'])
 
         Route::get('services/{service}/video', [ServiceController::class, 'video'])->name('services.video');
         Route::get('services/{service}/info', [ServiceController::class, 'info'])->name('services.info');
+        Route::post('services/{service}/share/email', [ServiceShareController::class, 'sendClientEmail'])->name('services.share.email');
+        Route::post('services/{service}/share/sms', [ServiceShareController::class, 'sendClientSms'])->name('services.share.sms');
         Route::get('reviews', [ServiceReviewController::class, 'index'])->name('reviews.index');
 
         Route::middleware('admin_only')->group(function () {
