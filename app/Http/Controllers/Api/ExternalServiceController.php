@@ -39,22 +39,30 @@ class ExternalServiceController extends Controller
         $service = ServiceOrder::findOrFail($request->service_id);
 
         // текущие tasks (если пусто — массив)
-        $existingTasks = collect($service->tasks ?? []);
+        $existingTasks = collect($service->tasks ?? [])
+            ->filter(function ($task) {
+                $taskId = data_get($task, 'taskId');
+
+                if (!is_numeric($taskId)) {
+                    return true;
+                }
+
+                return (int) $taskId < 100;
+            });
 
         // новые tasks из defects
         $newTasks = collect($request->defects)->map(function ($defect) {
             return [
                 'taskId'   => (string) $defect['id'],
                 'taskName' => $defect['title'],
-                'customerApproved' => "",
-                'deferredTaskDate' => "",
+                'customerApproved' => (string) ($defect['customerApproved'] ?? ''),
+                'deferredTaskDate' => (string) ($defect['deferredTaskDate'] ?? ''),
             ];
         });
 
         // 🔥 мердж + уникальность по taskId
         $mergedTasks = $existingTasks
-            ->merge($newTasks)
-            ->unique('taskId')
+            ->concat($newTasks)
             ->values()
             ->toArray();
 

@@ -21,6 +21,7 @@ const videoUrl = ref(null)
 const previewVideo = ref(null)
 const previewCanvas = ref(null)
 const sendMenuRef = ref(null)
+const CUSTOM_DEFECT_ID_START = 100
 
 function clampTime(element) {
     if (!previewVideo.value) return
@@ -39,11 +40,11 @@ onMounted(() => {
     loadVideo()
     if (service.defects) {
         if (Array.isArray(service.defects)) {
-            defects.value = [...service.defects]
+            defects.value = normalizeCustomDefects(service.defects)
         } else {
             try {
                 const parsed = JSON.parse(service.defects)
-                defects.value = Array.isArray(parsed) ? parsed : []
+                defects.value = Array.isArray(parsed) ? normalizeCustomDefects(parsed) : []
             } catch (e) {
                 defects.value = []
                 console.error('Failed to parse defects JSON:', e)
@@ -77,14 +78,29 @@ const loadVideo = async () => {
     videoUrl.value = data.url
 }
 
+const normalizeCustomDefects = (items) => {
+    return items.map((item, index) => ({
+        ...item,
+        id: CUSTOM_DEFECT_ID_START + index,
+    }))
+}
+
+const nextCustomDefectId = () => {
+    const maxExistingId = defects.value.reduce((maxId, item) => {
+        const numericId = Number(item.id)
+        return Number.isFinite(numericId) && numericId >= CUSTOM_DEFECT_ID_START
+            ? Math.max(maxId, numericId)
+            : maxId
+    }, CUSTOM_DEFECT_ID_START - 1)
+
+    return maxExistingId + 1
+}
+
 const addDefect = async () => {
     if (!newDefect.title) return
 
-    const tasksLength = service.tasks?.length || 0
-    const defectsLength = defects.value.length || 0
-
     const item = {
-        id: tasksLength + defectsLength + 1,
+        id: nextCustomDefectId(),
         time: 0,
         title: newDefect.title,
         status: newDefect.status || 'green',
@@ -103,6 +119,9 @@ const removeDefect = (index) => {
 }
 
 const saveDefects = async () => {
+    const normalizedDefects = normalizeCustomDefects(defects.value)
+    defects.value = normalizedDefects
+
     await fetch('/video/defects', {
         method: 'POST',
         headers: {
@@ -114,7 +133,7 @@ const saveDefects = async () => {
         },
         body: JSON.stringify({
             service_id: service.id,
-            defects: defects.value.map(({ id, time, title, status,customerApproved,deferredTaskDate }) => ({ id, time, title, status,customerApproved,deferredTaskDate }))
+            defects: normalizedDefects.map(({ id, time, title, status,customerApproved,deferredTaskDate }) => ({ id, time, title, status,customerApproved,deferredTaskDate }))
         })
     })
 
@@ -132,6 +151,7 @@ const getStatusIcon = (status) => {
 }
 
 const handleVideoRecord = async () => {
+    await saveDefects()
     window.location.href = `/admin/services/${service.id}/video`
 }
 
