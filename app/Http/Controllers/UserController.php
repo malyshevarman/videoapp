@@ -50,7 +50,7 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:6', 'confirmed'],
-            'role' => ['required', Rule::in(['admin', 'manager'])],
+            'role' => ['required', Rule::in(['admin', 'manager', 'master-consultant'])],
             'dealer_ids' => ['nullable', 'array'],
             'dealer_ids.*' => ['integer', 'exists:dealers,id'],
         ]);
@@ -83,7 +83,7 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'password' => ['nullable', 'string', 'min:6', 'confirmed'],
-            'role' => ['required', Rule::in(['admin', 'manager'])],
+            'role' => ['required', Rule::in(['admin', 'manager', 'master-consultant'])],
             'dealer_ids' => ['nullable', 'array'],
             'dealer_ids.*' => ['integer', 'exists:dealers,id'],
         ]);

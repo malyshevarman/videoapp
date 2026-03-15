@@ -166,7 +166,7 @@ const copyServiceLink = async (event) => {
             },
         })
 
-        const link = `${window.location.origin}/services/${service.public_url}/show`
+        const link = `${window.location.origin}/${service.public_url}/`
         await copyToClipboard(link)
 
         isLinkCopied.value = true

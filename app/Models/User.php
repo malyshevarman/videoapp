@@ -62,7 +62,25 @@ class User extends Authenticatable
 
     public function isManager(): bool
     {
-        return ($this->role ?? null) === 'manager';
+        return in_array($this->role ?? null, ['manager', 'master-consultant'], true);
+    }
+
+    public function isMasterConsultant(): bool
+    {
+        return ($this->role ?? null) === 'master-consultant';
+    }
+
+    public function roleLabel(): string
+    {
+        if ($this->isAdmin()) {
+            return 'Администратор';
+        }
+
+        if ($this->isMasterConsultant()) {
+            return 'Мастер-консультант';
+        }
+
+        return 'Менеджер';
     }
 
     public function canAccessAdminPanel(): bool

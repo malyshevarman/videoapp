@@ -25,6 +25,7 @@ const form = ref({
 const roleOptions = [
   { label: 'Админ', value: 'admin' },
   { label: 'Менеджер', value: 'manager' },
+  { label: '\u041c\u0430\u0441\u0442\u0435\u0440-\u043a\u043e\u043d\u0441\u0443\u043b\u044c\u0442\u0430\u043d\u0442', value: 'master-consultant' },
 ]
 
 const fieldError = (name) => {

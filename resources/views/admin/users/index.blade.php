@@ -70,6 +70,8 @@
                                     <td>
                                         @if(($user->role ?? null) === 'admin' || $user->is_admin)
                                             <span class="badge badge-success">Админ</span>
+                                        @elseif(($user->role ?? null) === 'master-consultant')
+                                            <span class="badge badge-info">&#1052;&#1072;&#1089;&#1090;&#1077;&#1088;-&#1082;&#1086;&#1085;&#1089;&#1091;&#1083;&#1100;&#1090;&#1072;&#1085;&#1090;</span>
                                         @else
                                             <span class="badge badge-info">Менеджер</span>
                                         @endif

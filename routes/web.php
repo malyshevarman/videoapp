@@ -20,7 +20,8 @@ Route::get('/', function () {
 Route::get('/video/play/{id}', [HomeController::class, 'videoplay'])
     ->name('videos.play');
 
-Route::get('/services/{public_url}/show', [HomeController::class, 'showservices'])->name('services.show');
+
+
 Route::post('/services/{public_url}/update', [HomeController::class, 'updateservices'])
     ->name('services.update');
 Route::post('/services/{public_url}/callback', [HomeController::class, 'requestCallback'])
@@ -38,6 +39,7 @@ Route::middleware('auth')->prefix('video')->group(function () {
     Route::post('defects', [ExternalServiceController::class, 'defects']);
     Route::delete('/', [ExternalServiceController::class, 'destroy']);
 });
+Route::get('/{public_url}/', [HomeController::class, 'showservices'])->name('services.show');
 
 
 Route::middleware(['auth', 'admin'])

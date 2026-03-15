@@ -33,7 +33,7 @@
                     <li class="user-header bg-primary">
                         <p>
                             {{ Auth::user()->name }}
-                            <small>{{ Auth::user()->isAdmin() ? 'Администратор' : 'Менеджер' }}</small>
+                            <small>{{ Auth::user()->roleLabel() }}</small>
                         </p>
                     </li>
                     <li class="user-footer">
