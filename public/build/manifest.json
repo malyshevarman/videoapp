@@ -44,12 +44,12 @@
     "src": "resources/images/smail.svg"
   },
   "resources/js/app.js": {
-    "file": "assets/app-DHjm2Ej0.js",
+    "file": "assets/app-BM7MH57X.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
     "css": [
-      "assets/app-392l5tTL.css"
+      "assets/app-VgCdbI0u.css"
     ],
     "assets": [
       "assets/primeicons-DMOk5skT.eot",
