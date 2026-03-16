@@ -75,7 +75,11 @@ class ServiceShareController extends Controller
             'target' => $recipientPhone,
             'sender' => $smsConfig['sender'],
         ]);
-
+     /*   dd([
+            'status' => $response->status(),
+            'body' => $response->body(),
+        ]);
+     */
         if (!$response->successful()) {
             return response()->json([
                 'message' => 'Не удалось отправить SMS клиенту.',
