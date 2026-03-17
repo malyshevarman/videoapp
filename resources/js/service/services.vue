@@ -21,7 +21,6 @@ const videoUrl = ref(null)
 const previewVideo = ref(null)
 const previewCanvas = ref(null)
 const sendMenuRef = ref(null)
-const CUSTOM_DEFECT_ID_START = 100
 
 function clampTime(element) {
     if (!previewVideo.value) return
@@ -54,6 +53,8 @@ onMounted(() => {
         defects.value = []
     }
 
+    syncLocalTasksWithDefects(defects.value)
+
     document.addEventListener('click', handleOutsideSendMenuClick)
 })
 
@@ -78,20 +79,55 @@ const loadVideo = async () => {
     videoUrl.value = data.url
 }
 
+const isNumericId = (value) => {
+    if (value === null || value === undefined || value === '') return false
+    return /^\d+$/.test(String(value))
+}
+
 const normalizeCustomDefects = (items) => {
-    return items.map((item, index) => ({
+    return (Array.isArray(items) ? items : []).map((item) => ({
         ...item,
-        id: CUSTOM_DEFECT_ID_START + index,
+        id: isNumericId(item?.id) ? String(Number(item.id)) : item?.id,
     }))
 }
 
+const getServiceTasks = () => Array.isArray(service.tasks) ? service.tasks : []
+
+const buildTasksFromDefects = (currentDefects) => {
+    const previousDefectIds = new Set(
+        normalizeCustomDefects(service.defects).map((item) => String(item.id))
+    )
+
+    const baseTasks = getServiceTasks().filter((task) => !previousDefectIds.has(String(task?.taskId)))
+    const defectTasks = normalizeCustomDefects(currentDefects).map((defect) => ({
+        taskId: String(defect.id),
+        taskName: defect.title,
+        customerApproved: defect.customerApproved ?? '',
+        deferredTaskDate: defect.deferredTaskDate ?? '',
+    }))
+
+    return [...baseTasks, ...defectTasks]
+}
+
+const syncLocalTasksWithDefects = (currentDefects) => {
+    const normalizedDefects = normalizeCustomDefects(currentDefects)
+    service.defects = normalizedDefects
+    service.tasks = buildTasksFromDefects(normalizedDefects)
+}
+
 const nextCustomDefectId = () => {
-    const maxExistingId = defects.value.reduce((maxId, item) => {
-        const numericId = Number(item.id)
-        return Number.isFinite(numericId) && numericId >= CUSTOM_DEFECT_ID_START
-            ? Math.max(maxId, numericId)
-            : maxId
-    }, CUSTOM_DEFECT_ID_START - 1)
+    const taskIds = getServiceTasks()
+        .map((task) => Number(task?.taskId))
+        .filter((id) => Number.isFinite(id))
+
+    const defectIds = defects.value
+        .map((item) => Number(item?.id))
+        .filter((id) => Number.isFinite(id))
+
+    const maxExistingId = [...taskIds, ...defectIds].reduce(
+        (maxId, id) => Math.max(maxId, id),
+        0
+    )
 
     return maxExistingId + 1
 }
@@ -110,19 +146,22 @@ const addDefect = async () => {
     }
 
     defects.value.push(item)
+    syncLocalTasksWithDefects(defects.value)
     newDefect.title = ''
     newDefect.status = 'green'
 }
 
 const removeDefect = (index) => {
     defects.value.splice(index, 1)
+    syncLocalTasksWithDefects(defects.value)
 }
 
 const saveDefects = async () => {
     const normalizedDefects = normalizeCustomDefects(defects.value)
     defects.value = normalizedDefects
+    syncLocalTasksWithDefects(normalizedDefects)
 
-    await fetch('/video/defects', {
+    const response = await fetch('/video/defects', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -136,6 +175,21 @@ const saveDefects = async () => {
             defects: normalizedDefects.map(({ id, time, title, status,customerApproved,deferredTaskDate }) => ({ id, time, title, status,customerApproved,deferredTaskDate }))
         })
     })
+
+    const payload = await response.json().catch(() => ({}))
+
+    if (!response.ok) {
+        throw new Error(payload.message || 'Не удалось сохранить неисправности')
+    }
+
+    if (Array.isArray(payload.defects)) {
+        defects.value = normalizeCustomDefects(payload.defects)
+        service.defects = defects.value
+    }
+
+    if (Array.isArray(payload.tasks)) {
+        service.tasks = payload.tasks
+    }
 
     isSaved.value = true
     setTimeout(() => (isSaved.value = false), 2000)

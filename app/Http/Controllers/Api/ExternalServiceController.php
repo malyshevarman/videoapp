@@ -18,6 +18,95 @@ use Symfony\Component\Process\Process;
 
 class ExternalServiceController extends Controller
 {
+    private function isNumericTaskId($value): bool
+    {
+        return is_numeric($value) && (string) (int) $value === (string) $value;
+    }
+
+    private function normalizeDefectsAndTasks(ServiceOrder $service, array $incomingDefects): array
+    {
+        $existingTasks = collect($service->tasks ?? [])->values();
+        $storedDefectIds = collect($service->defects ?? [])
+            ->pluck('id')
+            ->filter(fn ($id) => $this->isNumericTaskId((string) $id))
+            ->map(fn ($id) => (string) (int) $id)
+            ->values();
+
+        $baseTasks = $existingTasks->reject(function ($task) use ($storedDefectIds) {
+            $taskId = (string) data_get($task, 'taskId');
+
+            return $storedDefectIds->contains((string) (int) $taskId);
+        })->values();
+
+        $reservedTaskIds = $baseTasks
+            ->pluck('taskId')
+            ->filter(fn ($taskId) => $this->isNumericTaskId((string) $taskId))
+            ->map(fn ($taskId) => (int) $taskId)
+            ->values();
+
+        $nextTaskId = max(
+            0,
+            $existingTasks
+                ->pluck('taskId')
+                ->filter(fn ($taskId) => $this->isNumericTaskId((string) $taskId))
+                ->map(fn ($taskId) => (int) $taskId)
+                ->max() ?? 0
+        ) + 1;
+
+        $assignedIds = [];
+
+        $normalizedDefects = collect($incomingDefects)->map(function ($defect) use ($storedDefectIds, $reservedTaskIds, &$nextTaskId, &$assignedIds) {
+            $requestedId = array_key_exists('id', $defect) ? (string) $defect['id'] : null;
+            $normalizedId = null;
+
+            if (
+                $requestedId !== null &&
+                $this->isNumericTaskId($requestedId) &&
+                !in_array((int) $requestedId, $assignedIds, true) &&
+                (
+                    $storedDefectIds->contains((string) (int) $requestedId) ||
+                    !$reservedTaskIds->contains((int) $requestedId)
+                )
+            ) {
+                $normalizedId = (string) (int) $requestedId;
+            }
+
+            if ($normalizedId === null) {
+                while (in_array($nextTaskId, $assignedIds, true) || $reservedTaskIds->contains($nextTaskId)) {
+                    $nextTaskId++;
+                }
+
+                $normalizedId = (string) $nextTaskId;
+                $nextTaskId++;
+            }
+
+            $assignedIds[] = (int) $normalizedId;
+
+            return [
+                'id' => $normalizedId,
+                'time' => array_key_exists('time', $defect) ? $defect['time'] : null,
+                'title' => (string) ($defect['title'] ?? ''),
+                'status' => $defect['status'] ?? null,
+                'customerApproved' => (string) ($defect['customerApproved'] ?? ''),
+                'deferredTaskDate' => (string) ($defect['deferredTaskDate'] ?? ''),
+            ];
+        })->values();
+
+        $defectTasks = $normalizedDefects->map(function ($defect) {
+            return [
+                'taskId' => (string) $defect['id'],
+                'taskName' => $defect['title'],
+                'customerApproved' => (string) ($defect['customerApproved'] ?? ''),
+                'deferredTaskDate' => (string) ($defect['deferredTaskDate'] ?? ''),
+            ];
+        });
+
+        return [
+            'defects' => $normalizedDefects->toArray(),
+            'tasks' => $baseTasks->concat($defectTasks)->values()->toArray(),
+        ];
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -37,6 +126,8 @@ class ExternalServiceController extends Controller
         }
 
         $service = ServiceOrder::findOrFail($request->service_id);
+        $originalTasks = $service->tasks;
+        $originalDefects = $service->defects;
 
         // текущие tasks (если пусто — массив)
         $existingTasks = collect($service->tasks ?? [])
@@ -67,8 +158,13 @@ class ExternalServiceController extends Controller
             ->toArray();
 
         // сохраняем
-        $service->tasks = $mergedTasks;
-        $service->defects = $request->defects;
+        $service->tasks = $originalTasks;
+        $service->defects = $originalDefects;
+
+        $normalizedPayload = $this->normalizeDefectsAndTasks($service, $request->defects);
+
+        $service->tasks = $normalizedPayload['tasks'];
+        $service->defects = $normalizedPayload['defects'];
 
         if (is_null($service->user_id)) {
             $service->user_id = Auth::id();
@@ -96,11 +192,21 @@ class ExternalServiceController extends Controller
 
         $service->save();
 
-        $defects = is_string($request->defects) ? json_decode($request->defects, true) : $request->defects;
+        $defects = $normalizedPayload['defects'];
 
         if (!empty($defects) && is_array($defects)) {
             $ffmpeg = FFMpeg::create();
             $video = $service->video()->latest()->first();
+            if (!$video) {
+                $service->refresh();
+
+                return response()->json([
+                    'message' => 'Дефекты сохранены, tasks обновлены',
+                    'tasks' => $service->tasks,
+                    'defects' => $service->defects,
+                ]);
+            }
+
             $videoName = 'videos/'.$video->filename;
             $disk = Storage::disk('videos');
 
@@ -147,6 +253,7 @@ class ExternalServiceController extends Controller
         return response()->json([
             'message' => 'Дефекты сохранены, tasks обновлены',
             'tasks' => $service->tasks,
+            'defects' => $service->defects,
         ]);
     }
 
