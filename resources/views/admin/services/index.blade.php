@@ -96,7 +96,6 @@
                                                 <span>{{ $reviewAverage !== null ? number_format((float) $reviewAverage, 1, ',', ' ') : '—' }}</span>
                                                 <small>/ 5</small>
                                             </div>
-
                                         @else
                                             <span class="text-muted small">Нет отзыва</span>
                                         @endif
@@ -125,6 +124,20 @@
                                            title="Открыть и редактировать">
                                             <i class="fas fa-pen"></i>
                                         </a>
+                                        @if(auth()->user()?->isAdmin())
+                                            <form method="POST"
+                                                  action="{{ route('admin.services.destroy', $order->id) }}"
+                                                  class="d-inline-block"
+                                                  onsubmit="return confirm('Вы уверены, что хотите удалить сервис, видео и скриншоты?')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit"
+                                                        class="btn btn-sm btn-outline-danger service-action-btn"
+                                                        title="Удалить сервис">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        @endif
                                     </td>
                                 </tr>
                             @endforeach
@@ -144,7 +157,7 @@
                     Показано {{ $orders->firstItem() ?? 0 }}-{{ $orders->lastItem() ?? 0 }} из {{ $orders->total() }}
                 </div>
                 <div>
-                    {{ $orders->links() }}
+                    {{ $orders->links('pagination::bootstrap-4') }}
                 </div>
             </div>
         </div>

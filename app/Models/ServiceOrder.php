@@ -107,6 +107,19 @@ class ServiceOrder extends Model implements HasMedia
                 );
             }
         });
+
+        static::deleting(function (ServiceOrder $order) {
+            Video::where('service_order_id', $order->id)
+                ->get()
+                ->each
+                ->delete();
+
+            if ($order->hasMedia('frames')) {
+                $order->clearMediaCollection('frames');
+            }
+
+            $order->serviceReview()->delete();
+        });
     }
 
     public function serviceReview()

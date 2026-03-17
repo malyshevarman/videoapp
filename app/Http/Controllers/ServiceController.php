@@ -91,6 +91,8 @@ class ServiceController extends Controller
 
     public function destroy(Request $request, int|string $id)
     {
+        abort_unless($request->user()?->isAdmin(), 403, 'Доступ только для администратора.');
+
         $service = $this->findVisibleServiceOrder($request, $id);
         $service->delete();
 
