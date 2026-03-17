@@ -97,7 +97,7 @@ class ServiceController extends Controller
         $service->delete();
 
         return redirect()->route('admin.services.index')
-            ->with('success', 'Service deleted successfully');
+            ->with('success', 'Сервис удален');
     }
 
     private function visibleServiceOrdersQuery(Request $request): Builder
