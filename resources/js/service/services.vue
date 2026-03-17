@@ -93,9 +93,9 @@ const normalizeCustomDefects = (items) => {
 
 const getServiceTasks = () => Array.isArray(service.tasks) ? service.tasks : []
 
-const buildTasksFromDefects = (currentDefects) => {
+const buildTasksFromDefects = (currentDefects, sourceDefects = service.defects) => {
     const previousDefectIds = new Set(
-        normalizeCustomDefects(service.defects).map((item) => String(item.id))
+        normalizeCustomDefects(sourceDefects).map((item) => String(item.id))
     )
 
     const baseTasks = getServiceTasks().filter((task) => !previousDefectIds.has(String(task?.taskId)))
@@ -111,8 +111,10 @@ const buildTasksFromDefects = (currentDefects) => {
 
 const syncLocalTasksWithDefects = (currentDefects) => {
     const normalizedDefects = normalizeCustomDefects(currentDefects)
+    const previousDefects = Array.isArray(service.defects) ? [...service.defects] : []
+
+    service.tasks = buildTasksFromDefects(normalizedDefects, previousDefects)
     service.defects = normalizedDefects
-    service.tasks = buildTasksFromDefects(normalizedDefects)
 }
 
 const nextCustomDefectId = () => {

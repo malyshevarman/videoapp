@@ -23,13 +23,64 @@ class ExternalServiceController extends Controller
         return is_numeric($value) && (string) (int) $value === (string) $value;
     }
 
+    private function normalizeTaskIdValue($value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $value = trim((string) $value);
+
+        if ($value === '') {
+            return null;
+        }
+
+        if ($this->isNumericTaskId($value)) {
+            return (string) (int) $value;
+        }
+
+        return $value;
+    }
+
+    private function buildTasksWithCurrentDefects(ServiceOrder $service, array $incomingTasks, ?array $defects = null): array
+    {
+        $currentDefects = collect($defects ?? $service->defects ?? [])
+            ->filter(fn ($defect) => is_array($defect))
+            ->values();
+
+        $defectTaskIds = $currentDefects
+            ->map(fn ($defect) => $this->normalizeTaskIdValue($defect['id'] ?? null))
+            ->filter()
+            ->values();
+
+        $baseTasks = collect($incomingTasks)
+            ->filter(fn ($task) => is_array($task))
+            ->reject(function ($task) use ($defectTaskIds) {
+                $taskId = $this->normalizeTaskIdValue(data_get($task, 'taskId'));
+
+                return $taskId !== null && $defectTaskIds->contains($taskId);
+            })
+            ->values();
+
+        $defectTasks = $currentDefects->map(function ($defect) {
+            return [
+                'taskId' => (string) ($defect['id'] ?? ''),
+                'taskName' => $defect['title'] ?? '',
+                'customerApproved' => (string) ($defect['customerApproved'] ?? ''),
+                'deferredTaskDate' => (string) ($defect['deferredTaskDate'] ?? ''),
+            ];
+        });
+
+        return $baseTasks->concat($defectTasks)->values()->toArray();
+    }
+
     private function normalizeDefectsAndTasks(ServiceOrder $service, array $incomingDefects): array
     {
         $existingTasks = collect($service->tasks ?? [])->values();
         $storedDefectIds = collect($service->defects ?? [])
             ->pluck('id')
-            ->filter(fn ($id) => $this->isNumericTaskId((string) $id))
-            ->map(fn ($id) => (string) (int) $id)
+            ->map(fn ($id) => $this->normalizeTaskIdValue($id))
+            ->filter()
             ->values();
 
         $baseTasks = $existingTasks->reject(function ($task) use ($storedDefectIds) {
@@ -92,18 +143,9 @@ class ExternalServiceController extends Controller
             ];
         })->values();
 
-        $defectTasks = $normalizedDefects->map(function ($defect) {
-            return [
-                'taskId' => (string) $defect['id'],
-                'taskName' => $defect['title'],
-                'customerApproved' => (string) ($defect['customerApproved'] ?? ''),
-                'deferredTaskDate' => (string) ($defect['deferredTaskDate'] ?? ''),
-            ];
-        });
-
         return [
             'defects' => $normalizedDefects->toArray(),
-            'tasks' => $baseTasks->concat($defectTasks)->values()->toArray(),
+            'tasks' => $this->buildTasksWithCurrentDefects($service, $baseTasks->toArray(), $normalizedDefects->toArray()),
         ];
     }
 
@@ -126,41 +168,6 @@ class ExternalServiceController extends Controller
         }
 
         $service = ServiceOrder::findOrFail($request->service_id);
-        $originalTasks = $service->tasks;
-        $originalDefects = $service->defects;
-
-        // текущие tasks (если пусто — массив)
-        $existingTasks = collect($service->tasks ?? [])
-            ->filter(function ($task) {
-                $taskId = data_get($task, 'taskId');
-
-                if (!is_numeric($taskId)) {
-                    return true;
-                }
-
-                return (int) $taskId < 100;
-            });
-
-        // новые tasks из defects
-        $newTasks = collect($request->defects)->map(function ($defect) {
-            return [
-                'taskId'   => (string) $defect['id'],
-                'taskName' => $defect['title'],
-                'customerApproved' => (string) ($defect['customerApproved'] ?? ''),
-                'deferredTaskDate' => (string) ($defect['deferredTaskDate'] ?? ''),
-            ];
-        });
-
-        // 🔥 мердж + уникальность по taskId
-        $mergedTasks = $existingTasks
-            ->concat($newTasks)
-            ->values()
-            ->toArray();
-
-        // сохраняем
-        $service->tasks = $originalTasks;
-        $service->defects = $originalDefects;
-
         $normalizedPayload = $this->normalizeDefectsAndTasks($service, $request->defects);
 
         $service->tasks = $normalizedPayload['tasks'];
@@ -519,10 +526,8 @@ class ExternalServiceController extends Controller
         $order = ServiceOrder::where('order_id', $orderId)->first();
         $customerDecisionRecorded = false;
 
-        $incomingTasks = collect($data['tasks'] ?? []);
+        $incomingTasks = collect($data['tasks'] ?? [])->filter(fn ($task) => is_array($task))->values();
         $incomingDetails = collect($data['details'] ?? []);
-
-        $mergedTasks = $incomingTasks;
         $mergedDetails = $incomingDetails;
 
         if ($order) {
@@ -530,14 +535,6 @@ class ExternalServiceController extends Controller
             $customerDecisionRecorded = collect($records)->contains(
                 fn ($r) => ($r['status'] ?? null) === 'customerDecisionRecorded'
             );
-
-            $existingTasks = collect($order->tasks ?? []);
-
-
-            $mergedTasks = $existingTasks
-                ->concat($incomingTasks)
-                ->unique('taskId')
-                ->values();
 
             if ($customerDecisionRecorded) {
 
@@ -549,7 +546,7 @@ class ExternalServiceController extends Controller
         $payload = [
             // ===== JSON блоки =====
             'referenceObject'        => $data['referenceObject'],
-            'tasks'                  => $mergedTasks->isNotEmpty() ? $mergedTasks->toArray() : null,
+            'tasks'                  => $incomingTasks->isNotEmpty() ? $incomingTasks->toArray() : null,
             'details'                => $mergedDetails->isNotEmpty() ? $mergedDetails->toArray() : null,
             'processStatusRecords'   => $data['processStatusRecords'] ?? null,
 
@@ -589,6 +586,7 @@ class ExternalServiceController extends Controller
 
         if ($order) {
             unset($payload['processStatusRecords'], $payload['processStatus'], $payload['defects']);
+            $payload['tasks'] = $this->buildTasksWithCurrentDefects($order, $incomingTasks->toArray());
 
             // После фиксации решения клиента не даем внешнему API перетирать details.
             if ($customerDecisionRecorded) {
@@ -646,10 +644,16 @@ class ExternalServiceController extends Controller
 
 
             $services = ServiceOrder::findOrFail($request->service_order_id);
+            $normalizedDefects = is_string($request->defects) ? json_decode($request->defects, true) : $request->defects;
 
-            if (!empty($request->defects)) {
-                $services->defects = $request->defects;
+            if (!empty($normalizedDefects) && is_array($normalizedDefects)) {
+                $normalizedPayload = $this->normalizeDefectsAndTasks($services, $normalizedDefects);
+                $services->defects = $normalizedPayload['defects'];
+                $services->tasks = $normalizedPayload['tasks'];
                 $services->save();
+                $normalizedDefects = $normalizedPayload['defects'];
+            } else {
+                $normalizedDefects = [];
             }
 
             $serviceOrderId = $request->service_order_id;
@@ -779,9 +783,7 @@ class ExternalServiceController extends Controller
                 'mime_type' => Storage::disk('videos')->mimeType($finalPath),
             ]);
 
-            $defects = is_string($request->defects) ? json_decode($request->defects, true) : $request->defects;
-
-            if (!empty($defects) && is_array($defects)) {
+            if (!empty($normalizedDefects)) {
                 $ffmpeg = FFMpeg::create();
                 $videoFFMpeg = $ffmpeg->open($finalFullPath);
 
@@ -789,7 +791,7 @@ class ExternalServiceController extends Controller
                     $services->clearMediaCollection('frames');
                 }
 
-                foreach ($defects as $index => $defect) {
+                foreach ($normalizedDefects as $index => $defect) {
                     if (isset($defect['time'])) {
                         $timeSec = floatval($defect['time']);
                         $tempImage = tempnam(sys_get_temp_dir(), 'frame_') . '.jpg';
@@ -817,7 +819,9 @@ class ExternalServiceController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Video uploaded successfully',
-                'video' => $video
+                'video' => $video,
+                'tasks' => $services->tasks,
+                'defects' => $services->defects,
             ]);
 
         } catch (\Exception $e) {
