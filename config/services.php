@@ -28,6 +28,14 @@ return [
         'key' => env('RESEND_KEY'),
     ],
 
+    'exchange' => [
+        'url' => env('EXCHANGE_URL'),
+        'username' => env('EXCHANGE_USERNAME', env('MAIL_USERNAME')),
+        'password' => env('EXCHANGE_PASSWORD', env('MAIL_PASSWORD')),
+        'email' => env('EXCHANGE_EMAIL', env('MAIL_FROM_ADDRESS')),
+        'version' => env('EXCHANGE_VERSION', 'Exchange2016'),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

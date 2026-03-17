@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 use App\Models\ServiceOrder;
-use Illuminate\Support\Facades\Mail;
+use App\Services\ExchangeMailService;
 
 class HomeController extends Controller
 {
@@ -217,7 +217,6 @@ class HomeController extends Controller
             $client['customerFirstName'] ?? null,
             $client['customerMidName'] ?? null,
         ])));
-        $clientPhone = $client['customerPhone'] ?? 'не указан';
         $orderNumber = data_get($service->referenceObject, 'orderId', $service->order_id);
 
         $itemTitle = trim((string) ($validated['item_title'] ?? ''));
@@ -237,13 +236,11 @@ class HomeController extends Controller
             $messageLines[] = "Позиция: {$itemTitle}";
         }
 
-        //$messageLines[] = 'Ссылка на заявку: ' . url("/services/{$service->public_url}");
-
-        Mail::raw(implode(PHP_EOL, $messageLines), function ($message) use ($recipientEmail, $orderNumber) {
-            $message
-                ->to($recipientEmail)
-                ->subject("Запрос обратного звонка по заявке №{$orderNumber}");
-        });
+        app(ExchangeMailService::class)->sendHtmlMessage(
+            [$recipientEmail],
+            "Запрос обратного звонка по заявке №{$orderNumber}",
+            nl2br(e(implode(PHP_EOL, $messageLines)))
+        );
 
         return response()->json([
             'success' => true,

@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\ServiceOrder;
+use App\Services\ExchangeMailService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class ServiceShareController extends Controller
@@ -20,26 +20,25 @@ class ServiceShareController extends Controller
             ], 422);
         }
 
-        if (!filter_var($recipientEmail, FILTER_VALIDATE_EMAIL)) {
+        if (! filter_var($recipientEmail, FILTER_VALIDATE_EMAIL)) {
             return response()->json([
                 'message' => 'Email клиента указан в неверном формате.',
             ], 422);
         }
 
         $link = $this->buildServiceLink($service);
+        $orderNumber = data_get($service->referenceObject, 'orderId', $service->order_id ?: $service->id);
         $messageLines = [
             'Уважаемый клиент, отправляем вам ссылку на видео-обзор сервиса.',
             '',
             $link,
         ];
 
-        Mail::raw(implode(PHP_EOL, $messageLines), function ($message) use ($recipientEmail, $service) {
-            $orderNumber = data_get($service->referenceObject, 'orderId', $service->order_id ?: $service->id);
-
-            $message
-                ->to($recipientEmail)
-                ->subject("Ссылка на видео-обзор сервиса по заявке №{$orderNumber}");
-        });
+        app(ExchangeMailService::class)->sendHtmlMessage(
+            [$recipientEmail],
+            "Ссылка на видео-обзор сервиса по заявке №{$orderNumber}",
+            nl2br(e(implode(PHP_EOL, $messageLines)))
+        );
 
         $this->markApprovalLinkSent($service);
 
@@ -75,12 +74,8 @@ class ServiceShareController extends Controller
             'target' => $recipientPhone,
             'sender' => $smsConfig['sender'],
         ]);
-     /*   dd([
-            'status' => $response->status(),
-            'body' => $response->body(),
-        ]);
-     */
-        if (!$response->successful()) {
+
+        if (! $response->successful()) {
             return response()->json([
                 'message' => 'Не удалось отправить SMS клиенту.',
             ], 502);
@@ -120,7 +115,7 @@ class ServiceShareController extends Controller
     private function markApprovalLinkSent(ServiceOrder $service): void
     {
         $records = $service->processStatusRecords ?? [];
-        if (!is_array($records)) {
+        if (! is_array($records)) {
             $records = [];
         }
 
