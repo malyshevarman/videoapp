@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Dealer;
+use App\Models\Theme;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\Rule;
@@ -19,6 +20,7 @@ class DealerController extends Controller
             : 'like';
 
         $dealers = Dealer::query()
+            ->with('theme')
             ->when($search !== '', function ($query) use ($search, $likeOperator) {
                 $searchId = is_numeric($search) ? (int) $search : null;
 
@@ -40,7 +42,9 @@ class DealerController extends Controller
 
     public function create()
     {
-        return view('admin.dealers.create');
+        $themes = Theme::query()->orderBy('name')->get(['id', 'name']);
+
+        return view('admin.dealers.create', compact('themes'));
     }
 
     public function store(Request $request)
@@ -48,12 +52,14 @@ class DealerController extends Controller
         $validated = $request->validate([
             'external_id' => ['nullable', 'string', 'max:255', 'unique:dealers,external_id'],
             'name' => ['required', 'string', 'max:255'],
+            'theme_id' => ['required', 'integer', 'exists:themes,id'],
             'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ]);
 
         $dealer = Dealer::create([
             'external_id' => $validated['external_id'] ?? null,
             'name' => $validated['name'],
+            'theme_id' => $validated['theme_id'],
         ]);
 
         if ($request->hasFile('logo')) {
@@ -67,7 +73,9 @@ class DealerController extends Controller
 
     public function edit(Dealer $dealer)
     {
-        return view('admin.dealers.edit', compact('dealer'));
+        $themes = Theme::query()->orderBy('name')->get(['id', 'name']);
+
+        return view('admin.dealers.edit', compact('dealer', 'themes'));
     }
 
     public function update(Request $request, Dealer $dealer)
@@ -80,6 +88,7 @@ class DealerController extends Controller
                 Rule::unique('dealers', 'external_id')->ignore($dealer->id),
             ],
             'name' => ['required', 'string', 'max:255'],
+            'theme_id' => ['required', 'integer', 'exists:themes,id'],
             'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'remove_logo' => ['nullable', 'boolean'],
         ]);
@@ -87,6 +96,7 @@ class DealerController extends Controller
         $dealer->update([
             'external_id' => $validated['external_id'] ?? null,
             'name' => $validated['name'],
+            'theme_id' => $validated['theme_id'],
         ]);
 
         if ($request->boolean('remove_logo')) {

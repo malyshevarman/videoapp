@@ -31,25 +31,17 @@
     "file": "assets/info-7r580py2.svg",
     "src": "resources/images/info.svg"
   },
-  "resources/images/logo.svg": {
-    "file": "assets/logo-DatOAv7x.svg",
-    "src": "resources/images/logo.svg"
-  },
-  "resources/images/logomobile.svg": {
-    "file": "assets/logomobile-DC56-dPj.svg",
-    "src": "resources/images/logomobile.svg"
-  },
   "resources/images/smail.svg": {
     "file": "assets/smail-CXCjrQjX.svg",
     "src": "resources/images/smail.svg"
   },
   "resources/js/app.js": {
-    "file": "assets/app-3LuSn4wx.js",
+    "file": "assets/app-DzRDlU6Z.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
     "css": [
-      "assets/app-DILl-CI3.css"
+      "assets/app-DlyZtIF7.css"
     ],
     "assets": [
       "assets/primeicons-DMOk5skT.eot",
@@ -65,7 +57,7 @@
     "isEntry": true
   },
   "resources/sass/appstyle.scss": {
-    "file": "assets/appstyle-DBlJnRlU.css",
+    "file": "assets/appstyle-h5zAPgE9.css",
     "src": "resources/sass/appstyle.scss",
     "isEntry": true
   },

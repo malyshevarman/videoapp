@@ -94,6 +94,12 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a href="{{ route('admin.themes.index') }}" class="nav-link {{ request()->routeIs('admin.themes.*') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-palette"></i>
+                                <p>Темы</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a href="{{ route('admin.settings.index') }}" class="nav-link {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}">
                                 <i class="nav-icon fas fa-cog"></i>
                                 <p>Настройки</p>

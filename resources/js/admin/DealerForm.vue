@@ -2,9 +2,11 @@
 import { ref } from 'vue'
 import InputText from 'primevue/inputtext'
 import Checkbox from 'primevue/checkbox'
+import Select from 'primevue/select'
 
 const props = defineProps({
   initial: { type: Object, required: true },
+  themes: { type: Array, default: () => [] },
   errors: { type: Object, default: () => ({}) },
   submitLabel: { type: String, default: 'Сохранить' },
   isEdit: { type: Boolean, default: false },
@@ -14,6 +16,7 @@ const props = defineProps({
 const form = ref({
   external_id: props.initial.external_id ?? '',
   name: props.initial.name ?? '',
+  theme_id: props.initial.theme_id ? Number(props.initial.theme_id) : null,
   remove_logo: !!props.initial.remove_logo,
 })
 
@@ -28,7 +31,7 @@ const fieldError = (name) => {
     <section class="panel">
       <div class="panel-head">
         <h3 class="panel-title">Карточка дилера</h3>
-        <p class="panel-subtitle">Название, внешний ID и логотип</p>
+        <p class="panel-subtitle">Название, внешний ID, тема и логотип дилера</p>
       </div>
 
       <div class="grid two-cols">
@@ -45,7 +48,24 @@ const fieldError = (name) => {
         </div>
 
         <div class="field span-all">
-          <label for="logo" class="label">Логотип</label>
+          <label for="df_theme" class="label">Тема</label>
+          <Select
+            id="df_theme"
+            v-model="form.theme_id"
+            :options="themes"
+            option-label="name"
+            option-value="id"
+            placeholder="Выберите тему"
+            class="full"
+            :invalid="!!fieldError('theme_id')"
+          />
+          <input type="hidden" name="theme_id" :value="form.theme_id ?? ''">
+          <small class="hint">Связь дилера с темой обязательна.</small>
+          <small v-if="fieldError('theme_id')" class="error">{{ fieldError('theme_id') }}</small>
+        </div>
+
+        <div class="field span-all">
+          <label for="logo" class="label">Логотип дилера</label>
           <div class="upload-box">
             <input
               id="logo"
@@ -60,7 +80,7 @@ const fieldError = (name) => {
         </div>
 
         <div v-if="isEdit && currentLogoUrl" class="field span-all">
-          <label class="label">Текущий логотип</label>
+          <label class="label">Текущий логотип дилера</label>
           <div class="logo-box">
             <img :src="currentLogoUrl" alt="Логотип дилера" class="logo-preview">
             <div class="logo-meta">
@@ -270,11 +290,32 @@ const fieldError = (name) => {
 }
 
 :deep(.p-inputtext),
+:deep(.p-select),
 :deep(.p-checkbox-box) {
   background: #fff !important;
   color: #0f172a !important;
-  border-color: #cbd5e1 !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 10px !important;
   box-shadow: none !important;
+}
+
+:deep(.p-select-label) {
+  color: #0f172a !important;
+}
+
+:deep(.p-select-label.p-placeholder) {
+  color: #64748b !important;
+}
+
+:deep(.p-inputtext:enabled:hover),
+:deep(.p-select:hover) {
+  border-color: #94a3b8 !important;
+}
+
+:deep(.p-inputtext:enabled:focus),
+:deep(.p-select.p-focus) {
+  border-color: #34d399 !important;
+  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.15) !important;
 }
 
 @media (max-width: 768px) {

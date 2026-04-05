@@ -123,6 +123,9 @@ button {
 }
 
 .top__logo {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
     font-weight: bold;
     letter-spacing: 0.08em;
     color: #0f2233;
@@ -130,9 +133,20 @@ button {
     white-space: nowrap;
     opacity: 1;
     width: 250px;
-    height: 50px;
-    background: url("../images/logo.svg") no-repeat;
-    background-size: contain;
+    min-height: 48px;
+}
+
+.top__logo--image {
+    letter-spacing: normal;
+}
+
+.top__logo-img {
+    display: block;
+    width: 100%;
+    max-width: 250px;
+    max-height: 48px;
+    object-fit: contain;
+    object-position: right center;
 }
 
 .top__logo-x {
@@ -1451,6 +1465,9 @@ p.bold {
 }
 
 @media (max-width: 767px) {
+    .top__head{
+        flex-direction: column-reverse;
+    }
     .success-page {
         min-height: calc(100vh - 104px);
     }
@@ -1530,12 +1547,7 @@ p.bold {
         width: 100%;
 
     }
-    .top__logo{
-        width: 74px;
-        height: 20px;
-        background: url("../images/logomobile.svg") 50% 50% no-repeat;
-        background-size: cover;
-    }
+
 
     .top__grid{
         grid-template-columns: 1fr;

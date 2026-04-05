@@ -26,6 +26,13 @@ type Service = {
     client?: { customerFirstName?: string }
     surveyObject?: { carBrand?: string; carModelCode?: string; carLicensePlate?: string }
     responsibleEmployee?: { specialistFirstName?: string; specialistLastName?: string }
+    dealer?: {
+        name?: string
+        theme?: {
+            name?: string
+            logo_url?: string | null
+        }
+    }
 }
 
 type DetailRow = {
@@ -109,6 +116,8 @@ const activeItemNumber = computed(() => {
 const visitDate = computed(() =>
     dayjs(props.service.visitStartTime).format('D MMMM YYYY')
 )
+const themeLogoUrl = computed(() => props.service.dealer?.theme?.logo_url ?? '')
+const themeLogoAlt = computed(() => props.service.dealer?.theme?.name ?? props.service.dealer?.name ?? 'Логотип дилера')
 const isClosed = computed(() => localServiceStatus.value === 'closed')
 const isReadOnly = computed(() => isClosed.value)
 const approvedStats = computed(() => {
@@ -589,6 +598,8 @@ function returnFromSuccess() {
     <ReviewForm
         v-if="isReviewFormOpen"
         :submitting="isReviewSubmitting"
+        :logo-url="themeLogoUrl"
+        :logo-alt="themeLogoAlt"
         @back="closeReviewForm"
         @submit="submitReview"
     />
@@ -596,6 +607,8 @@ function returnFromSuccess() {
     <SubmissionSuccess
         v-else-if="showSubmissionSuccess"
         :review-submitted="hasReview"
+        :logo-url="themeLogoUrl"
+        :logo-alt="themeLogoAlt"
         @back="returnFromSuccess"
         @open-review="openReviewForm"
     />
@@ -615,7 +628,12 @@ function returnFromSuccess() {
             <div v-else class="readonly-banner__done">Вы уже оставили отзыв</div>
         </div>
 
-        <ServiceHeader :service="service" :visit-date="visitDate" />
+        <ServiceHeader
+            :service="service"
+            :visit-date="visitDate"
+            :logo-url="themeLogoUrl"
+            :logo-alt="themeLogoAlt"
+        />
 
         <!-- MAIN -->
         <main class="main">

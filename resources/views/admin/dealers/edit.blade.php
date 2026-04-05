@@ -10,15 +10,20 @@
 
 @section('content')
     @php
-        $logoUrl = $dealer->getFirstMediaUrl('logo', 'logo_500') ?: $dealer->getFirstMediaUrl('logo');
+        $logoUrl = $dealer->getFirstMediaUrl('logo');
 
         $dealerFormInitial = [
             'external_id' => old('external_id', $dealer->external_id),
             'name' => old('name', $dealer->name),
+            'theme_id' => (int) old('theme_id', $dealer->theme_id),
             'remove_logo' => (bool) old('remove_logo', false),
         ];
 
         $dealerFormErrors = $errors->toArray();
+        $themeOptions = $themes->map(fn ($theme) => [
+            'id' => $theme->id,
+            'name' => $theme->name,
+        ])->values();
     @endphp
 
     <div class="container-fluid">
@@ -29,6 +34,7 @@
                 <div
                     id="admin-dealer-form"
                     data-initial='@json($dealerFormInitial)'
+                    data-themes='@json($themeOptions)'
                     data-errors='@json($dealerFormErrors)'
                     data-submit-label="Сохранить"
                     data-is-edit="1"

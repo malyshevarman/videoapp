@@ -1,15 +1,15 @@
 import './bootstrap';
-import {createApp} from 'vue';
+import { createApp } from 'vue';
 import PrimeVue from 'primevue/config';
 import Aura from '@primeuix/themes/aura';
 import 'primeicons/primeicons.css';
+import { Toaster } from 'vue-sonner';
 import ServiceEdit from './service/services.vue';
 import ServiceVideo from './service/video.vue';
 import ServicesClient from './service/services_clietn.vue';
 import UserForm from './admin/UserForm.vue';
 import DealerForm from './admin/DealerForm.vue';
-import 'primeicons/primeicons.css';
-import { Toaster } from 'vue-sonner'
+import ThemeForm from './admin/ThemeForm.vue';
 
 function parseDatasetPayload(raw, fallback) {
     if (!raw) {
@@ -47,25 +47,26 @@ function mountPrimeApp(el, component, props = {}) {
     return app;
 }
 
-const el = document.getElementById('service-edit');
-if (el) {
-    const service = JSON.parse(el.dataset.service);
-    createApp(ServiceEdit, {service}).mount(el);
+const serviceEditEl = document.getElementById('service-edit');
+if (serviceEditEl) {
+    const service = JSON.parse(serviceEditEl.dataset.service);
+    createApp(ServiceEdit, { service }).mount(serviceEditEl);
 }
 
-const eltwo = document.getElementById('service-video');
-if (eltwo) {
-    const service = JSON.parse(eltwo.dataset.service);
-    createApp(ServiceVideo, {service}).mount(eltwo);
+const serviceVideoEl = document.getElementById('service-video');
+if (serviceVideoEl) {
+    const service = JSON.parse(serviceVideoEl.dataset.service);
+    createApp(ServiceVideo, { service }).mount(serviceVideoEl);
 }
-const elttree = document.getElementById('service-client');
-if (elttree) {
-    const service = JSON.parse(elttree.dataset.service);
-    const items = JSON.parse(elttree.dataset.items)
 
-    const app = createApp(ServicesClient, { service, items })
-    app.component('Toaster', Toaster)
-    app.mount(elttree)
+const serviceClientEl = document.getElementById('service-client');
+if (serviceClientEl) {
+    const service = JSON.parse(serviceClientEl.dataset.service);
+    const items = JSON.parse(serviceClientEl.dataset.items);
+
+    const app = createApp(ServicesClient, { service, items });
+    app.component('Toaster', Toaster);
+    app.mount(serviceClientEl);
 }
 
 const userFormEl = document.getElementById('admin-user-form');
@@ -79,14 +80,25 @@ if (userFormEl) {
     });
 }
 
-
 const dealerFormEl = document.getElementById('admin-dealer-form');
 if (dealerFormEl) {
     mountPrimeApp(dealerFormEl, DealerForm, {
         initial: parseDatasetPayload(dealerFormEl.dataset.initial, {}),
+        themes: parseDatasetPayload(dealerFormEl.dataset.themes, []),
         errors: parseDatasetPayload(dealerFormEl.dataset.errors, {}),
         submitLabel: dealerFormEl.dataset.submitLabel || 'Сохранить',
         isEdit: dealerFormEl.dataset.isEdit === '1',
         currentLogoUrl: dealerFormEl.dataset.currentLogoUrl || '',
+    });
+}
+
+const themeFormEl = document.getElementById('admin-theme-form');
+if (themeFormEl) {
+    mountPrimeApp(themeFormEl, ThemeForm, {
+        initial: parseDatasetPayload(themeFormEl.dataset.initial, {}),
+        errors: parseDatasetPayload(themeFormEl.dataset.errors, {}),
+        submitLabel: themeFormEl.dataset.submitLabel || 'Сохранить',
+        isEdit: themeFormEl.dataset.isEdit === '1',
+        currentLogoUrl: themeFormEl.dataset.currentLogoUrl || '',
     });
 }

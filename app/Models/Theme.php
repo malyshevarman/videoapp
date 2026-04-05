@@ -3,37 +3,32 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
-class Dealer extends Model implements HasMedia
+class Theme extends Model implements HasMedia
 {
     use InteractsWithMedia;
 
     protected $fillable = [
-        'external_id',
         'name',
-        'theme_id',
     ];
 
-    public function users(): BelongsToMany
+    protected $appends = [
+        'logo_url',
+    ];
+
+    public function dealers(): HasMany
     {
-        return $this->belongsToMany(User::class)->withTimestamps();
+        return $this->hasMany(Dealer::class);
     }
 
-    public function serviceOrders(): HasMany
+    public function getLogoUrlAttribute(): ?string
     {
-        return $this->hasMany(ServiceOrder::class, 'dealerCode', 'external_id');
-    }
-
-    public function theme(): BelongsTo
-    {
-        return $this->belongsTo(Theme::class);
+        return $this->getFirstMediaUrl('logo') ?: null;
     }
 
     public function registerMediaCollections(): void

@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\ServiceReviewController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\DealerController;
 use App\Http\Controllers\ServiceShareController;
+use App\Http\Controllers\ThemeController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\Api\ExternalServiceController;
 
@@ -60,6 +61,9 @@ Route::middleware(['auth', 'admin'])
                 ->except(['show']);
 
             Route::resource('dealers', DealerController::class)
+                ->except(['show']);
+
+            Route::resource('themes', ThemeController::class)
                 ->except(['show']);
 
             Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
