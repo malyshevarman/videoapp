@@ -116,8 +116,20 @@ class ThemeController extends Controller
             return;
         }
 
+        $format = match ($file->getMimeType()) {
+            'image/jpeg' => 'jpeg',
+            'image/png' => 'png',
+            'image/webp' => 'webp',
+            default => null,
+        };
+
+        if ($format === null) {
+            return;
+        }
+
         Image::load($file->getPathname())
             ->fit(Fit::Max, 500, 500)
+            ->format($format)
             ->save();
     }
 }
