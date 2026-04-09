@@ -46,11 +46,15 @@ class ThemeController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'contact_description' => ['nullable', 'string'],
+            'footer_html' => ['nullable', 'string'],
             'logo' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ]);
 
         $theme = Theme::create([
             'name' => $validated['name'],
+            'contact_description' => $validated['contact_description'] ?? null,
+            'footer_html' => $validated['footer_html'] ?? null,
         ]);
 
         $this->prepareLogoImage($request->file('logo'));
@@ -69,11 +73,15 @@ class ThemeController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'contact_description' => ['nullable', 'string'],
+            'footer_html' => ['nullable', 'string'],
             'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ]);
 
         $theme->update([
             'name' => $validated['name'],
+            'contact_description' => $validated['contact_description'] ?? null,
+            'footer_html' => $validated['footer_html'] ?? null,
         ]);
 
         if ($request->hasFile('logo')) {

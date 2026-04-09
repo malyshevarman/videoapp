@@ -3,6 +3,8 @@ import { createApp } from 'vue';
 import PrimeVue from 'primevue/config';
 import Aura from '@primeuix/themes/aura';
 import 'primeicons/primeicons.css';
+import 'quill/dist/quill.core.css';
+import 'quill/dist/quill.snow.css';
 import { Toaster } from 'vue-sonner';
 import ServiceEdit from './service/services.vue';
 import ServiceVideo from './service/video.vue';

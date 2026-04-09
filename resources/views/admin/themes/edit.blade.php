@@ -12,6 +12,8 @@
     @php
         $themeFormInitial = [
             'name' => old('name', $theme->name),
+            'contact_description' => old('contact_description', $theme->contact_description),
+            'footer_html' => old('footer_html', $theme->footer_html),
         ];
 
         $themeFormErrors = $errors->toArray();

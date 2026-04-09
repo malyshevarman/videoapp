@@ -15,6 +15,8 @@ class Theme extends Model implements HasMedia
 
     protected $fillable = [
         'name',
+        'contact_description',
+        'footer_html',
     ];
 
     protected $appends = [

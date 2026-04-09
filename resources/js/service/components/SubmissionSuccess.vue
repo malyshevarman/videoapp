@@ -4,6 +4,8 @@ defineProps<{
     reviewSubmitted?: boolean
     logoUrl?: string
     logoAlt?: string
+    contactDescription?: string
+    footerHtml?: string
 }>()
 
 const emit = defineEmits<{
@@ -70,9 +72,7 @@ const emit = defineEmits<{
 
                 <div class="note__bottom">
                     <div class="note__left">
-                        <div>ООО «БОРИСХОФ 1»</div>
-                        <div class="note__muted">с/п Булатниковское, район 29 км МКАД, уч. 1</div>
-                        <div class="note__muted">+7 495 745-11-11</div>
+                        <div class="note__preline">{{ contactDescription }}</div>
                     </div>
 
                     <div class="note__right">
@@ -98,7 +98,23 @@ const emit = defineEmits<{
                 <div class="note__fine">
                     Все цены указаны с учетом всех налогов, индивидуальных скидок и акций. Авторизация ремонта означает согласие клиента на выполнение дополнительных работ на автомобиле в рамках указанной стоимости.
                 </div>
+
+
             </section>
         </main>
     </div>
 </template>
+
+<style scoped>
+.note__preline {
+    white-space: pre-line;
+}
+
+.note__theme-html {
+    margin-top: 16px;
+}
+
+.note__theme-html :deep(p) {
+    margin: 0 0 16px;
+}
+</style>

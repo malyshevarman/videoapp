@@ -31,6 +31,8 @@ type Service = {
         theme?: {
             name?: string
             logo_url?: string | null
+            contact_description?: string | null
+            footer_html?: string | null
         }
     }
 }
@@ -118,6 +120,20 @@ const visitDate = computed(() =>
 )
 const themeLogoUrl = computed(() => props.service.dealer?.theme?.logo_url ?? '')
 const themeLogoAlt = computed(() => props.service.dealer?.theme?.name ?? props.service.dealer?.name ?? 'Логотип дилера')
+const themeContactDescription = computed(() => props.service.dealer?.theme?.contact_description ?? 'ООО «БОРИСХОФ 1»\nс/п Булатниковское, район 29 км МКАД, уч. 1\n+7 495 745-11-11')
+const themeFooterHtml = computed(() => props.service.dealer?.theme?.footer_html ?? `<p class="bold">
+    Уважаемый клиент! Сообщаем Вам, что в Группе Компаний БорисХоф оплата товаров и услуг
+    осуществляется исключительно на расчётные счета организации. Пожалуйста, не платите деньги на личные счета
+    сторонних лиц! Остерегайтесь мошенников!
+</p>
+<p class="note__muted">
+    Информируем, что отмечаются случаи мошеннических действий,
+    когда после передачи автомобиля в автосервис неизвестное лицо от имени сотрудника сервиса звонит
+    клиенту, сообщает о выявленной неисправности и под предлогом срочного заказа, необходимых для
+    ремонта, запчастей и оперативности их доставки просит перевести денежные средства на его личный
+    счет. После перевода денег лицо перестает отвечать на звонки, а автосервис также не может
+    ответить за переведенные деньги
+</p>`)
 const isClosed = computed(() => localServiceStatus.value === 'closed')
 const isReadOnly = computed(() => isClosed.value)
 const approvedStats = computed(() => {
@@ -600,6 +616,8 @@ function returnFromSuccess() {
         :submitting="isReviewSubmitting"
         :logo-url="themeLogoUrl"
         :logo-alt="themeLogoAlt"
+        :contact-description="themeContactDescription"
+        :footer-html="themeFooterHtml"
         @back="closeReviewForm"
         @submit="submitReview"
     />
@@ -609,6 +627,8 @@ function returnFromSuccess() {
         :review-submitted="hasReview"
         :logo-url="themeLogoUrl"
         :logo-alt="themeLogoAlt"
+        :contact-description="themeContactDescription"
+        :footer-html="themeFooterHtml"
         @back="returnFromSuccess"
         @open-review="openReviewForm"
     />
@@ -746,30 +766,13 @@ function returnFromSuccess() {
 
                 <!-- FOOTER TEXTS -->
                 <section class="note">
-                    <p class="bold">
-                        Уважаемый клиент! Сообщаем Вам, что в Группе Компаний БорисХоф оплата товаров и услуг
-                        осуществляется
-                        исключительно на расчётные счета организации. Пожалуйста, не платите деньги на личные счета
-                        сторонних лиц! Остерегайтесь мошенников!
-
-                    </p>
-                    <p class="note__muted">
-                        Информируем, что отмечаются случаи мошеннических действий,
-                        когда после передачи автомобиля в автосервис неизвестное лицо от имени сотрудника сервиса звонит
-                        клиенту, сообщает о выявленной неисправности и под предлогом срочного заказа, необходимых для
-                        ремонта, запчастей и оперативности их доставки просит перевести денежные средства на его личный
-                        счет. После перевода денег лицо перестает отвечать на звонки, а автосервис также не может
-                        ответить
-                        за переведенные деньги
-                    </p>
+                    <div class="note__theme-html" v-html="themeFooterHtml"></div>
 
                     <div class="note__divider"></div>
 
                     <div class="note__bottom">
                         <div class="note__left">
-                            <div>ООО «БОРИСХОФ 1»</div>
-                            <div class="note__muted">с/п Булатниковское, район 29 км МКАД, уч. 1</div>
-                            <div class="note__muted">+7 495 745-11-11</div>
+                            <div class="note__preline">{{ themeContactDescription }}</div>
                         </div>
 
                         <div class="note__right">
@@ -892,6 +895,14 @@ function returnFromSuccess() {
     font-size: 14px;
     font-weight: 700;
     color: #d5f1d4;
+}
+
+.note__preline {
+    white-space: pre-line;
+}
+
+.note__theme-html :deep(p) {
+    margin: 0 0 16px;
 }
 
 @media (max-width: 767px) {
