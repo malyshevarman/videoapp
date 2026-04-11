@@ -21,6 +21,7 @@ const videoUrl = ref(null)
 const previewVideo = ref(null)
 const previewCanvas = ref(null)
 const sendMenuRef = ref(null)
+const isClosedService = service.localStatus === 'Closed' || service.local_status === 'closed'
 
 function clampTime(element) {
     if (!previewVideo.value) return
@@ -135,6 +136,7 @@ const nextCustomDefectId = () => {
 }
 
 const addDefect = async () => {
+    if (isClosedService) return
     if (!newDefect.title) return
 
     const item = {
@@ -154,11 +156,13 @@ const addDefect = async () => {
 }
 
 const removeDefect = (index) => {
+    if (isClosedService) return
     defects.value.splice(index, 1)
     syncLocalTasksWithDefects(defects.value)
 }
 
 const saveDefects = async () => {
+    if (isClosedService) return
     const normalizedDefects = normalizeCustomDefects(defects.value)
     defects.value = normalizedDefects
     syncLocalTasksWithDefects(normalizedDefects)
@@ -207,6 +211,7 @@ const getStatusIcon = (status) => {
 }
 
 const handleVideoRecord = async () => {
+    if (isClosedService) return
     await saveDefects()
     window.location.href = `/admin/services/${service.id}/video`
 }
@@ -385,6 +390,7 @@ const sendClientSms = async (event) => {
                                 class="list-group"
                                 ghost-class="ghost-item"
                                 handle=".handle"
+                                :disabled="isClosedService"
                             >
                                 <template #item="{ element, index }">
                                     <div class="list-group-item defect-item">
@@ -410,6 +416,7 @@ const sendClientSms = async (event) => {
                                                         v-model="element.time"
                                                         @input="clampTime(element)"
                                                         type="number"
+                                                        :disabled="isClosedService"
                                                     >
                                                 </div>
                                             </div>
@@ -417,6 +424,7 @@ const sendClientSms = async (event) => {
 
                                         <div class="actions defect-actions">
                                             <button
+                                                v-if="!isClosedService"
                                                 class="btn btn-sm btn-outline-danger"
                                                 @click="removeDefect(index)"
                                                 title="Удалить"
@@ -433,6 +441,7 @@ const sendClientSms = async (event) => {
                             <div class="d-flex justify-content-between align-items-center flex-wrap" style="gap: 8px;">
                                 <div class="actions-inline">
                                     <button
+                                        v-if="!isClosedService"
                                         class="btn btn-sm"
                                         :class="isSaved ? 'btn-success' : 'btn-primary'"
                                         :disabled="isSaved"
@@ -443,7 +452,7 @@ const sendClientSms = async (event) => {
                                         <span v-else>Сохранено</span>
                                     </button>
 
-                                    <a href="#" class="btn btn-sm btn-info" @click.prevent="handleVideoRecord">
+                                    <a v-if="!isClosedService" href="#" class="btn btn-sm btn-info" @click.prevent="handleVideoRecord">
                                         <i class="fas fa-video mr-1"></i>Видео
                                     </a>
 
@@ -486,7 +495,7 @@ const sendClientSms = async (event) => {
                     </div>
                 </div>
 
-                <div class="col-12 col-lg-6 order-1 order-lg-2">
+                <div v-if="!isClosedService" class="col-12 col-lg-6 order-1 order-lg-2">
                     <div class="card card-outline card-info">
                         <div class="card-header">
                             <h4 class="card-title">Добавление неисправности</h4>
@@ -550,12 +559,12 @@ const sendClientSms = async (event) => {
             </template>
 
             <div class="mobile-actions" v-if="defects.length > 0">
-                <button class="btn" :class="isSaved ? 'btn-success' : 'btn-primary'" :disabled="isSaved" @click="saveDefects">
+                <button v-if="!isClosedService" class="btn" :class="isSaved ? 'btn-success' : 'btn-primary'" :disabled="isSaved" @click="saveDefects">
                     <i class="fas fa-save mr-1"></i>
                     <span v-if="!isSaved">Сохранить</span>
                     <span v-else>Сохранено</span>
                 </button>
-                <a href="#" class="btn btn-info" @click.prevent="handleVideoRecord">
+                <a v-if="!isClosedService" href="#" class="btn btn-info" @click.prevent="handleVideoRecord">
                     <i class="fas fa-video mr-1"></i>Видео
                 </a>
                 <a href="#" class="btn btn-info" @click.prevent="copyServiceLink">
