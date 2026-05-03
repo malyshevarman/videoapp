@@ -585,8 +585,8 @@ class ExternalServiceController extends Controller
         ];
 
         if ($order) {
-            unset($payload['processStatusRecords'], $payload['processStatus'], $payload['defects']);
-            $payload['tasks'] = $this->buildTasksWithCurrentDefects($order, $incomingTasks->toArray());
+            unset($payload['processStatusRecords'], $payload['tasks'], $payload['processStatus'], $payload['defects']);
+          //  $payload['tasks'] = $this->buildTasksWithCurrentDefects($order, $incomingTasks->toArray());
 
             // После фиксации решения клиента не даем внешнему API перетирать details.
             if ($customerDecisionRecorded) {
