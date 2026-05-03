@@ -26,7 +26,22 @@ class AdminController extends Controller
     public function dashboard()
     {
         $servicesQuery = ServiceOrder::query();
-        $allRecords = (clone $servicesQuery)->select('processStatusRecords')->get();
+        $totalServices = (clone $servicesQuery)->count();
+
+        if ($totalServices === 0) {
+            $serviceStats = [
+                'total' => 0,
+                'with_history' => 0,
+                'without_history' => 0,
+                'last_24h' => 0,
+                'latest_created_at' => null,
+                'status_counts' => [],
+            ];
+
+            return view('admin.welcome', compact('serviceStats'));
+        }
+
+        $allRecords = (clone $servicesQuery)->get(['processStatusRecords']);
 
         $statusCounts = [];
         $withHistory = 0;
@@ -49,9 +64,9 @@ class AdminController extends Controller
         arsort($statusCounts);
 
         $serviceStats = [
-            'total' => (clone $servicesQuery)->count(),
+            'total' => $totalServices,
             'with_history' => $withHistory,
-            'without_history' => max(((clone $servicesQuery)->count() - $withHistory), 0),
+            'without_history' => max(($totalServices - $withHistory), 0),
             'last_24h' => (clone $servicesQuery)->where('created_at', '>=', now()->subDay())->count(),
             'latest_created_at' => (clone $servicesQuery)->max('created_at'),
             'status_counts' => $statusCounts,
